@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { runStubExtraction } from '@/lib/extraction-stub';
+import { runSessionExtraction } from '@/lib/extraction-provider';
 
 // POST /api/test/extract-stub?sessionId= — stub Hermes extraction (for slice testing)
 export async function POST(req: NextRequest) {
@@ -15,16 +15,24 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const ordersProcessed = await runStubExtraction(sessionId);
+    const previousProvider = process.env.EXTRACTION_PROVIDER;
+    let extraction: Awaited<ReturnType<typeof runSessionExtraction>>;
 
-    if (ordersProcessed === 0) {
+    try {
+      process.env.EXTRACTION_PROVIDER = 'stub';
+      extraction = await runSessionExtraction(sessionId);
+    } finally {
+      process.env.EXTRACTION_PROVIDER = previousProvider;
+    }
+
+    if (extraction.ordersProcessed === 0) {
       return NextResponse.json({ error: 'No orders found' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
       message: 'Stub extraction complete',
-      ordersProcessed,
+      ordersProcessed: extraction.ordersProcessed,
       sessionId,
     });
   } catch (error) {

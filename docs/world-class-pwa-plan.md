@@ -190,7 +190,7 @@ Goal: replace stub extraction with the real AI worker.
 
 Tasks:
 
-- Deploy Hermes or a simpler worker if Hermes proves operationally heavy.
+- Deploy a dedicated iDeliver OCR Hermes worker separate from the user's general Hermes agent.
 - Add provider config through env.
 - Strip EXIF before model calls.
 - Send image-only payloads.
@@ -203,6 +203,14 @@ Done when:
 - Sent session becomes ready for review without manual intervention.
 - Low-confidence/missing fields are visibly flagged.
 - Provider can be swapped by config.
+
+Dedicated OCR Hermes contract:
+
+- Service name: `ideliver-ocr-hermes`
+- Endpoint: `POST /extract-shipment-photo`
+- Auth: `Authorization: Bearer HERMES_OCR_TOKEN`
+- Input: `orderId`, `sessionId`, `sequence`, `imageDataUrl`, `merchant`
+- Output: strict shipment JSON with `fields`, `confidence`, `fieldConfidence`, `warnings`, `provider`, `model`, and `rawRef`
 
 ### Phase 6 - World-Class Hardening
 

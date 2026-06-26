@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { runStubExtraction } from '@/lib/extraction-stub';
+import { runSessionExtraction } from '@/lib/extraction-provider';
 import { prisma } from '@/lib/prisma';
 import { SessionStatus } from '@prisma/client';
 
@@ -43,7 +43,7 @@ export async function POST(
       },
     });
 
-    const stubbedOrders = await runStubExtraction(id);
+    const extraction = await runSessionExtraction(id);
 
     return NextResponse.json({
       success: true,
@@ -55,13 +55,28 @@ export async function POST(
       },
       orderCount: updatedSession.orders.length,
       extraction: {
-        mode: 'stub',
-        ordersProcessed: stubbedOrders,
+        provider: extraction.provider,
+        ordersProcessed: extraction.ordersProcessed,
       },
     });
   } catch (error) {
+    await prisma.actionLog.create({
+      data: {
+        actor: session.email,
+        action: 'session.extraction_failed',
+        entity: 'session',
+        entityId: id,
+        meta: {
+          message: error instanceof Error ? error.message : String(error),
+        },
+      },
+    }).catch(() => undefined);
+
     return NextResponse.json(
-      { error: 'Failed to send session', details: error },
+      {
+        error: 'Failed to send session for OCR extraction',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
