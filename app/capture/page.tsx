@@ -22,6 +22,15 @@ interface CapturedPhoto {
 
 type CaptureStatus = 'idle' | 'searching' | 'creating' | 'capturing' | 'sending' | 'sent';
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Could not read photo'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function CapturePage() {
   const [query, setQuery] = useState('');
   const [merchants, setMerchants] = useState<Merchant[]>([]);
@@ -86,12 +95,12 @@ export default function CapturePage() {
     setStatus('capturing');
 
     try {
-      const formData = new FormData();
-      formData.append('photo', file);
+      const photoDataUrl = await fileToDataUrl(file);
 
       const response = await fetch(`/api/sessions/${sessionId}/photos`, {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoDataUrl }),
       });
       const data = await response.json();
 
@@ -132,7 +141,7 @@ export default function CapturePage() {
         return;
       }
 
-      setMessage(`${data.orderCount} orders sent and stub-extracted for review.`);
+      setMessage(`${data.orderCount} orders sent to ${data.extraction.provider} for review.`);
       setStatus('sent');
     } catch {
       setMessage('Could not send session');
