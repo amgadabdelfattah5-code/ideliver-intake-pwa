@@ -88,7 +88,10 @@ export default function ReviewPage() {
   const [message, setMessage] = useState('');
 
   const pendingOrders = useMemo(
-    () => selectedSession?.orders.filter((order) => order.status !== 'submitted') ?? [],
+    () =>
+      selectedSession?.orders.filter(
+        (order) => order.status !== 'submitted' && order.status !== 'awaiting_merchant'
+      ) ?? [],
     [selectedSession]
   );
   const order = pendingOrders[currentOrderIndex];
@@ -160,6 +163,24 @@ export default function ReviewPage() {
 
     await loadSession(selectedSession.id, currentOrderIndex);
     setMessage('Order submitted. Next receipt loaded.');
+  };
+
+  const markAwaitingMerchant = async () => {
+    if (!order || !selectedSession) return;
+
+    setMessage('');
+    const response = await fetch(`/api/orders/${order.id}/awaiting-merchant`, {
+      method: 'POST',
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      setMessage(data.error || 'Could not mark order awaiting merchant reply');
+      return;
+    }
+
+    await loadSession(selectedSession.id, currentOrderIndex);
+    setMessage('Order marked awaiting merchant reply.');
   };
 
   if (loading) {
@@ -326,6 +347,14 @@ export default function ReviewPage() {
                   type="button"
                 >
                   Submit shipment
+                </button>
+
+                <button
+                  className="mt-3 h-11 w-full rounded-md border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+                  onClick={markAwaitingMerchant}
+                  type="button"
+                >
+                  Awaiting merchant reply
                 </button>
               </div>
             )}
