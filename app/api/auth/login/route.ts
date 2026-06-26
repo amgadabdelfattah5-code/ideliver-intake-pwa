@@ -27,10 +27,12 @@ export async function POST(req: Request) {
     }
 
     const wpUser = await wpVerify.json();
+    const email = wpUser.email || username;
+    const displayName = wpUser.name || wpUser.slug || username;
     const token = createSessionToken({
       wpUserId: wpUser.id,
-      username: wpUser.name,
-      email: wpUser.email,
+      username: displayName,
+      email,
     });
 
     const cookieStore = await cookies();
@@ -44,7 +46,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      user: { id: wpUser.id, username: wpUser.name, email: wpUser.email },
+      user: { id: wpUser.id, username: displayName, email },
     });
   } catch {
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });
