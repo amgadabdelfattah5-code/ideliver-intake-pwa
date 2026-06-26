@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  intake-pwa-db:
+    image: postgres:17-alpine
+    container_name: intake-pwa-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=ideliver_intake_pwa_secure_2025
+      - POSTGRES_DB=ideliver_intake_pwa
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - intake-network
+
+  intake-pwa:
+    image: node:20-alpine
+    container_name: intake-pwa
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:ideliver_intake_pwa_secure_2025@intake-pwa-db:5432/ideliver_intake_pwa
+      - SESSION_SECRET=ideliver_intake_pwa_session_secret_2025
+      - WP_APP_USER=amged.mohammed@gmail.com
+      - WP_APP_PASSWORD=JzNe xI72 Fl4p 35Qq QbYw f33U
+      - WP_API_BASE=https://ideliveregypt.com/wp-json
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/public/uploads
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./package.json:/app/package.json
+    command: sh -c "npm install && npm run build && npm start"
+    depends_on:
+      - intake-pwa-db
+    restart: unless-stopped
+    networks:
+      - intake-network
+
+volumes:
+  postgres_data:
+  uploads:
+
+networks:
+  intake-network:
+    driver: bridge

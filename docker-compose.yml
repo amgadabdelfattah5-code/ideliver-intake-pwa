@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  intake-pwa:
+    image: node:20-alpine
+    container_name: intake-pwa
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - WP_APP_USER=${WP_APP_USER}
+      - WP_APP_PASSWORD=${WP_APP_PASSWORD}
+      - WP_API_BASE=${WP_API_BASE}
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/public/uploads
+    command: sh -c "npm install && npm run build && npm start"
+    restart: unless-stopped
+
+volumes:
+  uploads:

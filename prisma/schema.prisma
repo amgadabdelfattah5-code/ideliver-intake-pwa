@@ -1,0 +1,99 @@
+// OPS-INTAKE-01 slice schema — from plan.md
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URL configured in prisma.config.ts (reads DATABASE_URL from .env)
+}
+
+// WP is system of record for merchants; this is a local cache
+model Merchant {
+  id          String   @id @default(cuid())
+  wpUserId    Int      @unique
+  merchantId  String   // liquidship_unique_id
+  name        String
+  phone       String?
+  cachedAt    DateTime @default(now())
+  sessions    Session[]
+}
+
+model Session {
+  id          String        @id @default(cuid())
+  merchant    Merchant      @relation(fields: [merchantId], references: [id])
+  merchantId  String
+  createdBy   String                      // actor
+  status      SessionStatus
+  photoCount  Int           @default(0)
+  createdAt   DateTime      @default(now())
+  sentAt      DateTime?
+  completedAt DateTime?
+  orders      Order[]
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  session         Session     @relation(fields: [sessionId], references: [id])
+  sessionId       String
+  sequence        Int                     // idempotency key part: sessionId + sequence
+  photoUrl        String
+  status          OrderStatus
+  aiFields        Json?                   // extracted fields
+  correctedFields Json?                   // human-corrected
+  confidence      Float?
+  shipmentId      String?                 // from LiquidShip on submit
+  reviewedBy      String?
+  submittedAt     DateTime?
+  claimedBy       String?                 // claim-ready (unused at slice)
+  claimedAt       DateTime?
+  extraction      Extraction?
+  corrections     Correction[]
+  @@unique([sessionId, sequence])        // ← idempotency backbone
+}
+
+model Extraction {
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String   @unique
+  provider  String   // e.g. "openrouter" — chosen provider (swappable)
+  model     String
+  rawRef    String?  // pointer, not the raw payload (PII hygiene)
+  createdAt DateTime @default(now())
+}
+
+model Correction {        // the fine-tuning/eval asset
+  id             String   @id @default(cuid())
+  order          Order    @relation(fields: [orderId], references: [id])
+  orderId        String
+  field          String
+  aiValue        String
+  correctedValue String
+  correctedBy    String
+  correctedAt    DateTime @default(now())
+}
+
+model ActionLog {
+  id       BigInt   @id @default(autoincrement())
+  actor    String
+  action   String   // session.send | order.submit | ...
+  entity   String
+  entityId String
+  at       DateTime @default(now())
+  meta     Json?
+}
+
+enum SessionStatus {
+  created
+  awaiting_extraction
+  ready_for_review
+  completed
+}
+
+enum OrderStatus {
+  captured
+  extracted
+  re_extracted
+  submitted
+  awaiting_merchant
+}
