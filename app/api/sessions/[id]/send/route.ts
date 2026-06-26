@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
+import { runStubExtraction } from '@/lib/extraction-stub';
 import { prisma } from '@/lib/prisma';
 import { SessionStatus } from '@prisma/client';
 
 // POST /api/sessions/:id/send → status awaiting_extraction; enqueue + trigger Hermes
 export async function POST(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAuth();
@@ -14,7 +15,6 @@ export async function POST(
   const { id } = await params;
 
   try {
-    // Update session status
     const updatedSession = await prisma.session.update({
       where: { id },
       data: {
@@ -29,19 +29,35 @@ export async function POST(
       },
     });
 
-    // TODO: Enqueue job and trigger Hermes webhook
-    // For slice: stub the Hermes trigger
-    console.log('[STUB] Would trigger Hermes for session:', id, 'orders:', updatedSession.orders.length);
+    if (updatedSession.orders.length === 0) {
+      return NextResponse.json({ error: 'Cannot send a session with no photos' }, { status: 400 });
+    }
+
+    await prisma.actionLog.create({
+      data: {
+        actor: session.email,
+        action: 'session.send',
+        entity: 'session',
+        entityId: id,
+        meta: { orderCount: updatedSession.orders.length },
+      },
+    });
+
+    const stubbedOrders = await runStubExtraction(id);
 
     return NextResponse.json({
       success: true,
       session: {
         id: updatedSession.id,
-        status: updatedSession.status,
+        status: SessionStatus.ready_for_review,
         photoCount: updatedSession.photoCount,
         sentAt: updatedSession.sentAt,
       },
       orderCount: updatedSession.orders.length,
+      extraction: {
+        mode: 'stub',
+        ordersProcessed: stubbedOrders,
+      },
     });
   } catch (error) {
     return NextResponse.json(

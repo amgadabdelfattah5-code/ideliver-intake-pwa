@@ -1,5 +1,4 @@
-// WordPress REST API client (app-password auth)
-const WP_BASE = process.env.WP_API_BASE || 'https://ideliveregypt.com/wp-json/liquidship/v1';
+const DEFAULT_WP_JSON_BASE = 'https://ideliveregypt.com/wp-json';
 const WP_USER = process.env.WP_APP_USER || 'amged.mohammed@gmail.com';
 const WP_PASSWORD = process.env.WP_APP_PASSWORD || '';
 
@@ -14,9 +13,18 @@ interface WPMerchant {
   address: string;
 }
 
+export function getWpJsonBase(): string {
+  const configured = process.env.WP_API_BASE || DEFAULT_WP_JSON_BASE;
+  return configured.replace(/\/liquidship\/v1\/?$/, '').replace(/\/$/, '');
+}
+
+export function getLiquidShipBase(): string {
+  return `${getWpJsonBase()}/liquidship/v1`;
+}
+
 export async function searchWPMerchants(query: string): Promise<WPMerchant[]> {
   const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
-  const url = `${WP_BASE}/merchants?q=${encodeURIComponent(query)}`;
+  const url = `${getLiquidShipBase()}/merchants?q=${encodeURIComponent(query)}`;
 
   const res = await fetch(url, {
     headers: {
@@ -34,7 +42,7 @@ export async function searchWPMerchants(query: string): Promise<WPMerchant[]> {
 
 export async function listAllWPMerchants(): Promise<WPMerchant[]> {
   const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
-  const url = `${WP_BASE}/merchants`;
+  const url = `${getLiquidShipBase()}/merchants`;
 
   const res = await fetch(url, {
     headers: {

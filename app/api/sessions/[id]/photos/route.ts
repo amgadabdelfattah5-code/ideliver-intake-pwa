@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { OrderStatus, SessionStatus } from '@prisma/client';
+import { OrderStatus } from '@prisma/client';
 
 // POST /api/sessions/:id/photos (multipart) → store photo, increment photoCount
 export async function POST(

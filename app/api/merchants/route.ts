@@ -52,8 +52,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // WP succeeded: upsert into cache and return fresh data
-    const upsertOps = wpMerchants.map((m) =>
+    const cachedMerchants = await Promise.all(
+      wpMerchants.map((m) =>
       prisma.merchant.upsert({
         where: { wpUserId: m.wpUserId },
         create: {
@@ -70,17 +70,16 @@ export async function GET(req: NextRequest) {
           cachedAt: new Date(),
         },
       })
-    );
-
-    // Run upserts in parallel (don't await; fire-and-forget cache update)
-    Promise.all(upsertOps).catch((err) =>
-      console.error('Cache upsert failed:', err)
+      )
     );
 
     return NextResponse.json({
       success: true,
       source: 'live',
-      merchants: wpMerchants,
+      merchants: wpMerchants.map((merchant, index) => ({
+        ...merchant,
+        id: cachedMerchants[index].id,
+      })),
     });
   } catch (error) {
     return NextResponse.json(

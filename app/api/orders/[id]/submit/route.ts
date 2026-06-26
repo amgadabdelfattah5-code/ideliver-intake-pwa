@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getLiquidShipBase } from '@/lib/wp-client';
 import { OrderStatus, SessionStatus } from '@prisma/client';
 
 // POST /api/orders/:id/submit { correctedFields } → validate → idempotent LiquidShip → store shipment_id
@@ -45,7 +46,7 @@ export async function POST(
     const merchantId = order.session.merchant.merchantId;
 
     // Call LiquidShip /shipment
-    const wpRes = await fetch(`${process.env.WP_API_BASE}/shipment`, {
+    const wpRes = await fetch(`${getLiquidShipBase()}/shipment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -92,14 +93,14 @@ export async function POST(
         shipmentId: shipmentData.order_id?.toString(),
         submittedAt: new Date(),
         correctedFields: correctedFields || null,
-        reviewedBy: (authSession as any).email || 'unknown',
+        reviewedBy: authSession.email,
       },
     });
 
     // Log action
     await prisma.actionLog.create({
       data: {
-        actor: (authSession as any).email || 'unknown',
+        actor: authSession.email,
         action: 'order.submit',
         entity: 'order',
         entityId: orderId,

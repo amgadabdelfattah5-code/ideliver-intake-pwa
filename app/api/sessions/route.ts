@@ -16,13 +16,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'merchantId required' }, { status: 400 });
     }
 
-    // Verify merchant exists in WP (optional for slice; can skip for speed)
-    // For slice, trust the merchantId from the frontend lookup
+    const merchant = await prisma.merchant.findUnique({
+      where: { id: merchantId },
+      select: { id: true },
+    });
+
+    if (!merchant) {
+      return NextResponse.json({ error: 'Merchant not found in local cache' }, { status: 404 });
+    }
 
     const newSession = await prisma.session.create({
       data: {
         merchantId,
-        createdBy: (session as any).email || 'unknown',
+        createdBy: session.email,
         status: SessionStatus.created,
         photoCount: 0,
       },

@@ -1,151 +1,307 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import Link from 'next/link';
+import { ChangeEvent, useRef, useState } from 'react';
+
+interface Merchant {
+  id: string;
+  wpUserId: number;
+  merchantId: string;
+  name: string;
+  phone: string;
+  governorate?: string;
+  city?: string;
+  address?: string;
+}
+
+interface CapturedPhoto {
+  orderId: string;
+  sequence: number;
+  previewUrl: string;
+}
+
+type CaptureStatus = 'idle' | 'searching' | 'creating' | 'capturing' | 'sending' | 'sent';
 
 export default function CapturePage() {
-  const [merchantId, setMerchantId] = useState('');
+  const [query, setQuery] = useState('');
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [selectedMerchant, setSelectedMerchant] = useState<Merchant | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [photoCount, setPhotoCount] = useState(0);
-  const [status, setStatus] = useState<'idle' | 'creating' | 'capturing' | 'sending' | 'sent'>('idle');
+  const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
+  const [status, setStatus] = useState<CaptureStatus>('idle');
+  const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Create session
-  const createSession = async () => {
-    if (!merchantId) return;
-    setStatus('creating');
+  const searchMerchants = async () => {
+    setMessage('');
+    setStatus('searching');
+
     try {
-      const res = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ merchantId }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSessionId(data.session.id);
-        setPhotoCount(0);
+      const response = await fetch(`/api/merchants?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'Merchant search failed');
+        return;
       }
+
+      setMerchants(data.merchants || []);
     } finally {
       setStatus('idle');
     }
   };
 
-  // Capture photo
-  const capturePhoto = async (file: File) => {
-    if (!sessionId) return;
+  const createSession = async (merchant: Merchant) => {
+    setMessage('');
+    setStatus('creating');
+
+    try {
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ merchantId: merchant.id }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'Could not start session');
+        return;
+      }
+
+      setSelectedMerchant(merchant);
+      setSessionId(data.session.id);
+      setPhotos([]);
+      setMerchants([]);
+      setQuery(merchant.name);
+    } finally {
+      setStatus('idle');
+    }
+  };
+
+  const capturePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !sessionId) return;
+
+    setMessage('');
     setStatus('capturing');
+
     try {
       const formData = new FormData();
       formData.append('photo', file);
-      const res = await fetch(`/api/sessions/${sessionId}/photos`, {
+
+      const response = await fetch(`/api/sessions/${sessionId}/photos`, {
         method: 'POST',
         body: formData,
       });
-      const data = await res.json();
-      if (data.success) {
-        setPhotoCount(data.sessionPhotoCount);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'Photo upload failed');
+        return;
       }
+
+      setPhotos((current) => [
+        ...current,
+        {
+          orderId: data.order.id,
+          sequence: data.order.sequence,
+          previewUrl: URL.createObjectURL(file),
+        },
+      ]);
     } finally {
+      event.target.value = '';
       setStatus('idle');
     }
   };
 
-  // Send session
   const sendSession = async () => {
     if (!sessionId) return;
+
+    setMessage('');
     setStatus('sending');
+
     try {
-      const res = await fetch(`/api/sessions/${sessionId}/send`, {
+      const response = await fetch(`/api/sessions/${sessionId}/send`, {
         method: 'POST',
       });
-      const data = await res.json();
-      if (data.success) {
-        setStatus('sent');
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'Could not send session');
+        setStatus('idle');
+        return;
       }
-    } finally {
+
+      setMessage(`${data.orderCount} orders sent and stub-extracted for review.`);
+      setStatus('sent');
+    } catch {
+      setMessage('Could not send session');
       setStatus('idle');
     }
+  };
+
+  const resetSession = () => {
+    photos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+    setSelectedMerchant(null);
+    setSessionId(null);
+    setPhotos([]);
+    setStatus('idle');
+    setMessage('');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow p-4">
-        <h1 className="text-xl font-bold mb-4">📦 Order Capture</h1>
-
-        {!sessionId ? (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Merchant ID</label>
-              <input
-                type="text"
-                value={merchantId}
-                onChange={(e) => setMerchantId(e.target.value)}
-                className="w-full border rounded px-3 py-2"
-                placeholder="e.g., 795024"
-              />
-            </div>
-            <button
-              onClick={createSession}
-              disabled={!merchantId || status === 'creating'}
-              className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-50"
-            >
-              {status === 'creating' ? 'Creating...' : 'Start Session'}
-            </button>
-          </>
-        ) : status === 'sent' ? (
-          <div className="text-center py-8">
-            <p className="text-lg font-medium text-green-600">✓ Sent for extraction</p>
-            <p className="text-sm text-gray-500 mt-2">
-              {photoCount} orders captured. AI extraction running in background.
-            </p>
-            <button
-              onClick={() => {
-                setSessionId(null);
-                setPhotoCount(0);
-                setStatus('idle');
-              }}
-              className="mt-4 text-blue-600 underline"
-            >
-              Start New Session
-            </button>
+    <main className="min-h-screen bg-[#f6f8fb]">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
+          <div>
+            <p className="text-sm font-semibold text-[#F27321]">Phone flow</p>
+            <h1 className="text-xl font-bold text-[#17365F]">Capture receipts</h1>
           </div>
-        ) : (
-          <>
-            <div className="mb-4">
-              <p className="text-sm text-gray-600">Session ID: {sessionId}</p>
-              <p className="text-2xl font-bold mt-2">Orders: {photoCount}</p>
+          <Link className="text-sm font-medium text-[#17365F]" href="/">
+            Home
+          </Link>
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-3xl px-4 py-5">
+        {!sessionId && (
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Search merchant</span>
+              <div className="mt-2 flex gap-2">
+                <input
+                  className="h-11 min-w-0 flex-1 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') searchMerchants();
+                  }}
+                  placeholder="Merchant name, phone, or ID"
+                />
+                <button
+                  className="h-11 rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white disabled:opacity-60"
+                  disabled={status === 'searching'}
+                  onClick={searchMerchants}
+                  type="button"
+                >
+                  {status === 'searching' ? 'Searching' : 'Search'}
+                </button>
+              </div>
+            </label>
+
+            {merchants.length > 0 && (
+              <div className="mt-4 divide-y divide-slate-100 rounded-md border border-slate-200">
+                {merchants.map((merchant) => (
+                  <button
+                    className="block w-full px-3 py-3 text-left hover:bg-slate-50"
+                    key={merchant.id}
+                    onClick={() => createSession(merchant)}
+                    type="button"
+                  >
+                    <span className="block text-sm font-semibold text-[#17365F]">
+                      {merchant.name}
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      {merchant.phone || merchant.merchantId}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {sessionId && selectedMerchant && (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-sm font-semibold text-slate-500">Active session</p>
+              <h2 className="mt-1 text-lg font-bold text-[#17365F]">{selectedMerchant.name}</h2>
+              <p className="mt-1 text-xs text-slate-500">Session {sessionId}</p>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-md bg-slate-50 p-3">
+                  <p className="text-xs font-medium text-slate-500">Orders</p>
+                  <p className="text-3xl font-bold text-[#17365F]">{photos.length}</p>
+                </div>
+                <div className="rounded-md bg-slate-50 p-3">
+                  <p className="text-xs font-medium text-slate-500">Status</p>
+                  <p className="text-lg font-bold capitalize text-[#17365F]">{status}</p>
+                </div>
+              </div>
             </div>
+
+            {photos.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {photos.map((photo) => (
+                  <div
+                    className="aspect-square overflow-hidden rounded-md border border-slate-200 bg-white"
+                    key={photo.orderId}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt={`Receipt ${photo.sequence}`}
+                      className="h-full w-full object-cover"
+                      src={photo.previewUrl}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             <input
-              ref={fileInputRef}
-              type="file"
               accept="image/*"
               capture="environment"
               className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) capturePhoto(file);
-              }}
+              onChange={capturePhoto}
+              ref={fileInputRef}
+              type="file"
             />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={status === 'capturing'}
-              className="w-full bg-green-600 text-white py-3 rounded mb-4 disabled:opacity-50"
-            >
-              {status === 'capturing' ? 'Uploading...' : '📷 Capture Photo'}
-            </button>
 
-            {photoCount > 0 && (
-              <button
-                onClick={sendSession}
-                disabled={status === 'sending'}
-                className="w-full bg-blue-600 text-white py-3 rounded disabled:opacity-50"
-              >
-                {status === 'sending' ? 'Sending...' : '✓ Send for Extraction'}
-              </button>
+            {status !== 'sent' ? (
+              <div className="grid gap-3">
+                <button
+                  className="h-12 rounded-md bg-[#F27321] px-4 text-sm font-semibold text-white disabled:opacity-60"
+                  disabled={status === 'capturing' || status === 'sending'}
+                  onClick={() => fileInputRef.current?.click()}
+                  type="button"
+                >
+                  {status === 'capturing' ? 'Uploading photo...' : 'Capture receipt'}
+                </button>
+
+                <button
+                  className="h-12 rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white disabled:opacity-60"
+                  disabled={photos.length === 0 || status === 'sending'}
+                  onClick={sendSession}
+                  type="button"
+                >
+                  {status === 'sending' ? 'Sending...' : `Send ${photos.length} orders`}
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                <Link
+                  className="flex h-12 items-center justify-center rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white"
+                  href="/review"
+                >
+                  Open review queue
+                </Link>
+                <button
+                  className="h-12 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700"
+                  onClick={resetSession}
+                  type="button"
+                >
+                  Start another session
+                </button>
+              </div>
             )}
-          </>
+          </div>
         )}
-      </div>
-    </div>
+
+        {message && (
+          <p className="mt-4 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">
+            {message}
+          </p>
+        )}
+      </section>
+    </main>
   );
 }

@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { SessionStatus } from '@prisma/client';
 
 // GET /api/review/queue → sessions ready_for_review grouped by merchant with counts
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await requireAuth();
   if (session instanceof NextResponse) return session;
 

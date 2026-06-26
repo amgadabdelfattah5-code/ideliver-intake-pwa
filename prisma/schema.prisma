@@ -1,68 +1,72 @@
-// OPS-INTAKE-01 slice schema — from plan.md
+// OPS-INTAKE-01 slice schema from plan.md.
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  // Connection URL configured in prisma.config.ts (reads DATABASE_URL from .env)
+  // Connection URL configured in prisma.config.ts.
 }
 
-// WP is system of record for merchants; this is a local cache
+// WP is system of record for merchants; this is a local cache.
 model Merchant {
-  id          String   @id @default(cuid())
-  wpUserId    Int      @unique
-  merchantId  String   // liquidship_unique_id
-  name        String
-  phone       String?
-  cachedAt    DateTime @default(now())
-  sessions    Session[]
+  id         String    @id @default(cuid())
+  wpUserId   Int       @unique
+  merchantId String
+  name       String
+  phone      String?
+  cachedAt   DateTime  @default(now())
+  sessions   Session[]
 }
 
 model Session {
   id          String        @id @default(cuid())
   merchant    Merchant      @relation(fields: [merchantId], references: [id])
   merchantId  String
-  createdBy   String                      // actor
+  createdBy   String
   status      SessionStatus
   photoCount  Int           @default(0)
   createdAt   DateTime      @default(now())
   sentAt      DateTime?
   completedAt DateTime?
   orders      Order[]
+
+  @@index([status, createdAt])
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  session         Session     @relation(fields: [sessionId], references: [id])
+  id              String       @id @default(cuid())
+  session         Session      @relation(fields: [sessionId], references: [id])
   sessionId       String
-  sequence        Int                     // idempotency key part: sessionId + sequence
+  sequence        Int
   photoUrl        String
   status          OrderStatus
-  aiFields        Json?                   // extracted fields
-  correctedFields Json?                   // human-corrected
+  aiFields        Json?
+  correctedFields Json?
   confidence      Float?
-  shipmentId      String?                 // from LiquidShip on submit
+  shipmentId      String?
   reviewedBy      String?
   submittedAt     DateTime?
-  claimedBy       String?                 // claim-ready (unused at slice)
+  claimedBy       String?
   claimedAt       DateTime?
   extraction      Extraction?
   corrections     Correction[]
-  @@unique([sessionId, sequence])        // ← idempotency backbone
+
+  @@unique([sessionId, sequence])
+  @@index([sessionId, status])
 }
 
 model Extraction {
   id        String   @id @default(cuid())
   order     Order    @relation(fields: [orderId], references: [id])
   orderId   String   @unique
-  provider  String   // e.g. "openrouter" — chosen provider (swappable)
+  provider  String
   model     String
-  rawRef    String?  // pointer, not the raw payload (PII hygiene)
+  rawRef    String?
   createdAt DateTime @default(now())
 }
 
-model Correction {        // the fine-tuning/eval asset
+model Correction {
   id             String   @id @default(cuid())
   order          Order    @relation(fields: [orderId], references: [id])
   orderId        String
@@ -76,11 +80,13 @@ model Correction {        // the fine-tuning/eval asset
 model ActionLog {
   id       BigInt   @id @default(autoincrement())
   actor    String
-  action   String   // session.send | order.submit | ...
+  action   String
   entity   String
   entityId String
   at       DateTime @default(now())
   meta     Json?
+
+  @@index([entity, entityId])
 }
 
 enum SessionStatus {
