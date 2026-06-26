@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
-type FieldValue = string | number | boolean | null;
-type AiFields = Record<string, FieldValue>;
+type AiFields = Record<string, unknown>;
 
 interface QueueMerchant {
   wpUserId: number;
@@ -40,10 +39,12 @@ const reviewFields = [
   ['recipientPhone', 'Phone'],
   ['recipientAddress', 'Address'],
   ['recipientGovernorate', 'Governorate'],
+  ['recipientCity', 'City'],
   ['product', 'Product'],
   ['price', 'Price'],
   ['shippingFeePrinted', 'Printed shipping fee'],
   ['COD', 'COD'],
+  ['notes', 'Notes'],
 ];
 
 function fieldsToDraft(fields: AiFields | null): Record<string, string> {
@@ -55,6 +56,27 @@ function fieldsToDraft(fields: AiFields | null): Record<string, string> {
   }
 
   return draft;
+}
+
+function confidenceForField(fields: AiFields | null, key: string): number | null {
+  const fieldConfidence = fields?.fieldConfidence;
+  if (!fieldConfidence || typeof fieldConfidence !== 'object' || Array.isArray(fieldConfidence)) {
+    return null;
+  }
+
+  const value = (fieldConfidence as Record<string, unknown>)[key];
+  return typeof value === 'number' ? value : null;
+}
+
+function warningsFromFields(fields: AiFields | null): string[] {
+  const warnings = fields?.warnings;
+  return Array.isArray(warnings) ? warnings.map(String) : [];
+}
+
+function formatErrorDetails(details: unknown): string {
+  if (Array.isArray(details)) return details.join(' ');
+  if (typeof details === 'string') return details;
+  return '';
 }
 
 export default function ReviewPage() {
@@ -123,7 +145,8 @@ export default function ReviewPage() {
     const data = await response.json();
 
     if (!response.ok) {
-      setMessage(data.error || 'Submit failed');
+      const details = formatErrorDetails(data.details);
+      setMessage(details ? `${data.error || 'Submit failed'}: ${details}` : data.error || 'Submit failed');
       return;
     }
 
@@ -236,21 +259,44 @@ export default function ReviewPage() {
                   <p className="mt-1 text-2xl font-bold text-[#17365F]">
                     {order.confidence == null ? 'N/A' : `${Math.round(order.confidence * 100)}%`}
                   </p>
+                  {warningsFromFields(order.aiFields).length > 0 && (
+                    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+                      {warningsFromFields(order.aiFields).map((warning) => (
+                        <p className="text-xs font-semibold text-amber-800" key={warning}>
+                          {warning}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3">
-                  {reviewFields.map(([key, label]) => (
+                  {reviewFields.map(([key, label]) => {
+                    const fieldConfidence = confidenceForField(order.aiFields, key);
+                    const needsAttention = fieldConfidence != null && fieldConfidence < 0.75;
+
+                    return (
                     <label className="block" key={key}>
-                      <span className="text-sm font-semibold text-slate-700">{label}</span>
+                      <span className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">
+                        <span>{label}</span>
+                        {fieldConfidence != null && (
+                          <span className={needsAttention ? 'text-amber-700' : 'text-slate-400'}>
+                            {Math.round(fieldConfidence * 100)}%
+                          </span>
+                        )}
+                      </span>
                       <input
-                        className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+                        className={`mt-1 h-10 w-full rounded-md border px-3 text-sm outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20 ${
+                          needsAttention ? 'border-amber-300 bg-amber-50' : 'border-slate-300'
+                        }`}
                         value={draft[key] || ''}
                         onChange={(event) =>
                           setDraft((current) => ({ ...current, [key]: event.target.value }))
                         }
                       />
                     </label>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-3">

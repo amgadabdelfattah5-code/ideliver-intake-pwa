@@ -1,10 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { OrderStatus, SessionStatus } from '@prisma/client';
+
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getLiquidShipBase } from '@/lib/wp-client';
-import { OrderStatus, SessionStatus } from '@prisma/client';
 
-// POST /api/orders/:id/submit { correctedFields } → validate → idempotent LiquidShip → store shipment_id
+const reviewFieldKeys = [
+  'recipientName',
+  'recipientPhone',
+  'recipientAddress',
+  'recipientGovernorate',
+  'recipientCity',
+  'product',
+  'price',
+  'shippingFeePrinted',
+  'COD',
+  'notes',
+] as const;
+
+type ReviewFieldKey = (typeof reviewFieldKeys)[number];
+type FieldMap = Record<ReviewFieldKey, string>;
+
+function valueToString(value: unknown): string {
+  if (value == null) return '';
+  return String(value).trim();
+}
+
+function fieldsToMap(value: unknown): FieldMap {
+  const source = value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+  return reviewFieldKeys.reduce((fields, key) => {
+    fields[key] = valueToString(source[key]);
+    return fields;
+  }, {} as FieldMap);
+}
+
+function money(value: string): number {
+  const normalized = Number(value.replace(/[^\d.]/g, ''));
+  return Number.isFinite(normalized) ? normalized : 0;
+}
+
+function validateShipmentFields(fields: FieldMap): string[] {
+  const errors: string[] = [];
+
+  if (!fields.recipientName) errors.push('Recipient name is required.');
+  if (!/^01\d{9}$/.test(fields.recipientPhone)) {
+    errors.push('Recipient phone must be an Egyptian mobile number like 01012345678.');
+  }
+  if (!fields.recipientAddress) errors.push('Recipient address is required.');
+  if (!fields.recipientGovernorate) errors.push('Recipient governorate is required.');
+  if (!fields.product) errors.push('Product is required.');
+  if (money(fields.COD) <= 0) errors.push('COD must be greater than zero.');
+
+  return errors;
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -18,7 +70,6 @@ export async function POST(
     const body = await req.json();
     const { correctedFields } = body;
 
-    // Get order with session
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -32,8 +83,7 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Check if already submitted (idempotency)
-    if (order.status === OrderStatus.submitted) {
+    if (order.status === OrderStatus.submitted || order.shipmentId) {
       return NextResponse.json({
         success: true,
         alreadySubmitted: true,
@@ -41,11 +91,25 @@ export async function POST(
       });
     }
 
-    // Build shipment payload from aiFields (or correctedFields)
-    const fields = correctedFields || order.aiFields || {};
-    const merchantId = order.session.merchant.merchantId;
+    const aiFields = fieldsToMap(order.aiFields);
+    const fields = {
+      ...aiFields,
+      ...fieldsToMap(correctedFields),
+    };
+    const validationErrors = validateShipmentFields(fields);
 
-    // Call LiquidShip /shipment
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        { error: 'Shipment fields need review', details: validationErrors },
+        { status: 422 }
+      );
+    }
+
+    const merchantId = order.session.merchant.merchantId;
+    const cod = money(fields.COD);
+    const productPrice = money(fields.price) || cod;
+    const shippingFee = money(fields.shippingFeePrinted);
+
     const wpRes = await fetch(`${getLiquidShipBase()}/shipment`, {
       method: 'POST',
       headers: {
@@ -57,20 +121,21 @@ export async function POST(
       body: JSON.stringify({
         sender: { id: merchantId },
         receiver: {
-          name: fields.recipientName || '',
-          phone: fields.recipientPhone || '',
-          address: fields.recipientAddress || '',
-          governorate: fields.recipientGovernorate || '',
+          name: fields.recipientName,
+          phone: fields.recipientPhone,
+          address: fields.recipientAddress,
+          governorate: fields.recipientGovernorate,
         },
         products: [
           {
-            name: 'Order',
+            name: fields.product,
             qty: 1,
-            price: fields.COD || 0,
+            price: productPrice,
           },
         ],
         financials: {
-          collected_value: fields.COD || 0,
+          shipping_fee: shippingFee,
+          collected_value: cod,
         },
       }),
     });
@@ -84,31 +149,53 @@ export async function POST(
     }
 
     const shipmentData = await wpRes.json();
+    const shipmentId = shipmentData.order_id?.toString();
 
-    // Update order status + store shipment_id
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: OrderStatus.submitted,
-        shipmentId: shipmentData.order_id?.toString(),
-        submittedAt: new Date(),
-        correctedFields: correctedFields || null,
-        reviewedBy: authSession.email,
-      },
-    });
+    if (!shipmentId) {
+      return NextResponse.json(
+        { error: 'LiquidShip shipment response missing order_id', details: shipmentData },
+        { status: 502 }
+      );
+    }
 
-    // Log action
-    await prisma.actionLog.create({
-      data: {
-        actor: authSession.email,
-        action: 'order.submit',
-        entity: 'order',
-        entityId: orderId,
-        meta: { shipmentId: shipmentData.order_id },
-      },
-    });
+    const corrections = reviewFieldKeys
+      .filter((field) => aiFields[field] !== fields[field])
+      .map((field) => ({
+        orderId,
+        field,
+        aiValue: aiFields[field],
+        correctedValue: fields[field],
+        correctedBy: authSession.email,
+      }));
 
-    // Check if all orders in session are submitted
+    await prisma.$transaction([
+      prisma.correction.deleteMany({ where: { orderId } }),
+      ...(corrections.length > 0 ? [prisma.correction.createMany({ data: corrections })] : []),
+      prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.submitted,
+          shipmentId,
+          submittedAt: new Date(),
+          correctedFields: fields,
+          reviewedBy: authSession.email,
+        },
+      }),
+      prisma.actionLog.create({
+        data: {
+          actor: authSession.email,
+          action: 'order.submit',
+          entity: 'order',
+          entityId: orderId,
+          meta: {
+            shipmentId,
+            trackingNumber: shipmentData.tracking_number,
+            correctionCount: corrections.length,
+          },
+        },
+      }),
+    ]);
+
     const remaining = await prisma.order.count({
       where: {
         sessionId: order.sessionId,
@@ -126,14 +213,14 @@ export async function POST(
     return NextResponse.json({
       success: true,
       shipment: {
-        id: shipmentData.order_id,
+        id: shipmentId,
         trackingNumber: shipmentData.tracking_number,
       },
       remainingInSession: remaining,
     });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Submit failed', details: error },
+      { error: 'Submit failed', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
