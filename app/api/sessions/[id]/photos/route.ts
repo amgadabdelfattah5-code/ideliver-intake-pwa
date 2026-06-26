@@ -58,7 +58,10 @@ export async function POST(
     });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to store photo', details: error },
+      {
+        error: 'Failed to store photo',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
