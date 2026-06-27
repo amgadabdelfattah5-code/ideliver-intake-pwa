@@ -44,11 +44,8 @@ const reviewFields = [
   ['recipientPhone', 'Phone'],
   ['recipientAddress', 'Address'],
   ['recipientGovernorate', 'Governorate'],
-  ['recipientCity', 'City'],
   ['product', 'Product'],
   ['price', 'Price'],
-  ['shippingFeePrinted', 'Printed shipping fee'],
-  ['COD', 'COD'],
   ['notes', 'Notes'],
 ];
 
@@ -56,11 +53,19 @@ function fieldsToDraft(fields: AiFields | null): Record<string, string> {
   const draft: Record<string, string> = {};
 
   for (const [key] of reviewFields) {
-    const value = fields?.[key];
+    const value = key === 'price' ? fields?.shippingFeePrinted ?? fields?.price : fields?.[key];
     draft[key] = value == null ? '' : String(value);
   }
 
   return draft;
+}
+
+function hiddenDraftValue(order: ReviewOrder, key: string): string {
+  const correctedValue = order.correctedFields?.[key];
+  const aiValue = order.aiFields?.[key];
+  const value = correctedValue ?? aiValue;
+
+  return value == null ? '' : String(value);
 }
 
 function confidenceForField(fields: AiFields | null, key: string): number | null {
@@ -160,11 +165,18 @@ export default function ReviewPage() {
   const submitOrder = async () => {
     if (!order || !selectedSession) return;
 
+    const correctedFields = {
+      ...draft,
+      recipientCity: hiddenDraftValue(order, 'recipientCity'),
+      COD: hiddenDraftValue(order, 'COD'),
+      shippingFeePrinted: draft.price || hiddenDraftValue(order, 'shippingFeePrinted'),
+    };
+
     setMessage('');
     const response = await fetch(`/api/orders/${order.id}/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ correctedFields: draft }),
+      body: JSON.stringify({ correctedFields }),
     });
     const data = await response.json();
 
@@ -300,7 +312,7 @@ export default function ReviewPage() {
 
             {order && (
               <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-3">
                   {reviewFields.map(([key, label]) => {
                     const fieldConfidence = confidenceForField(order.aiFields, key);
                     const validationFlag = validationFlagsFromFields(order.aiFields).find(
@@ -311,7 +323,7 @@ export default function ReviewPage() {
 
                     return (
                     <label
-                      className={key === 'recipientAddress' || key === 'notes' ? 'block md:col-span-2' : 'block'}
+                      className={key === 'recipientAddress' || key === 'notes' ? 'block md:col-span-3' : 'block'}
                       key={key}
                     >
                       <span className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">
@@ -327,9 +339,17 @@ export default function ReviewPage() {
                           needsAttention ? 'border-amber-300 bg-amber-50' : 'border-slate-300'
                         }`}
                         value={draft[key] || ''}
-                        onChange={(event) =>
-                          setDraft((current) => ({ ...current, [key]: event.target.value }))
-                        }
+                        inputMode={key === 'recipientPhone' ? 'numeric' : undefined}
+                        maxLength={key === 'recipientPhone' ? 11 : undefined}
+                        pattern={key === 'recipientPhone' ? '01[0-9]{9}' : undefined}
+                        onChange={(event) => {
+                          const value =
+                            key === 'recipientPhone'
+                              ? event.target.value.replace(/\D/g, '').slice(0, 11)
+                              : event.target.value;
+
+                          setDraft((current) => ({ ...current, [key]: value }));
+                        }}
                       />
                     </label>
                     );
