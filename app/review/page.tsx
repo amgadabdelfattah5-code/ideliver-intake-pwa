@@ -198,12 +198,6 @@ export default function ReviewPage() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  const selectPendingOrder = (index: number) => {
-    const nextOrder = pendingOrders[index];
-    setCurrentOrderIndex(index);
-    setDraft(fieldsToDraft(nextOrder?.correctedFields || nextOrder?.aiFields || null));
-  };
-
   const submitOrder = async () => {
     if (!order || !selectedSession) return;
 
@@ -238,24 +232,6 @@ export default function ReviewPage() {
 
     await loadSession(selectedSession.id, currentOrderIndex);
     setMessage('Order submitted. Next receipt loaded.');
-  };
-
-  const markAwaitingMerchant = async () => {
-    if (!order || !selectedSession) return;
-
-    setMessage('');
-    const response = await fetch(`/api/orders/${order.id}/awaiting-merchant`, {
-      method: 'POST',
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      setMessage(data.error || 'Could not mark order awaiting merchant reply');
-      return;
-    }
-
-    await loadSession(selectedSession.id, currentOrderIndex);
-    setMessage('Order marked awaiting merchant reply.');
   };
 
   if (loading) {
@@ -411,42 +387,13 @@ export default function ReviewPage() {
                   })}
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <button
-                    className="h-11 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 disabled:opacity-50"
-                    disabled={currentOrderIndex === 0}
-                    onClick={() => selectPendingOrder(Math.max(currentOrderIndex - 1, 0))}
-                    type="button"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    className="h-11 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 disabled:opacity-50"
-                    disabled={currentOrderIndex >= pendingOrders.length - 1}
-                    onClick={() =>
-                      selectPendingOrder(Math.min(currentOrderIndex + 1, pendingOrders.length - 1))
-                    }
-                    type="button"
-                  >
-                    Next
-                  </button>
-                </div>
-
-                <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_260px]">
+                <div className="mt-5">
                   <button
                     className="h-12 rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white hover:bg-[#102947]"
                     onClick={submitOrder}
                     type="button"
                   >
                     Submit shipment
-                  </button>
-
-                  <button
-                    className="h-12 rounded-md border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-100"
-                    onClick={markAwaitingMerchant}
-                    type="button"
-                  >
-                    Awaiting merchant reply
                   </button>
                 </div>
               </div>
