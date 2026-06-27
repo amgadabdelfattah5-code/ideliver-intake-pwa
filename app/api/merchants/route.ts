@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { searchWPMerchants, listAllWPMerchants } from '@/lib/wp-client';
 
 // GET /api/merchants?q= — live WP lookup with cache fallback
 export async function GET(req: NextRequest) {
   // Auth check
-  const session = await requireAuth();
+  const session = await requireRole(['admin', 'pickup']);
   if (session instanceof NextResponse) {
     return session;
   }

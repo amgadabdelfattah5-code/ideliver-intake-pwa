@@ -64,7 +64,13 @@ export function verifySessionToken(token: string | undefined): StaffSession | nu
   try {
     const payload = JSON.parse(base64UrlDecode(encodedPayload).toString('utf8')) as SignedSession;
 
-    if (!payload.wpUserId || !payload.username || !payload.email || !payload.exp) {
+    if (
+      payload.wpUserId == null ||
+      !payload.username ||
+      !payload.email ||
+      !payload.exp ||
+      !payload.role
+    ) {
       return null;
     }
 
@@ -76,6 +82,8 @@ export function verifySessionToken(token: string | undefined): StaffSession | nu
       wpUserId: payload.wpUserId,
       username: payload.username,
       email: payload.email,
+      role: payload.role,
+      authProvider: payload.authProvider,
     };
   } catch {
     return null;

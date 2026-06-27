@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { SessionStatus } from '@prisma/client';
 
 // POST /api/sessions { merchantId } → create new session
 export async function POST(req: NextRequest) {
-  const session = await requireAuth();
+  const session = await requireRole(['admin', 'pickup']);
   if (session instanceof NextResponse) return session;
 
   try {

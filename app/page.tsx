@@ -7,6 +7,7 @@ interface StaffUser {
   wpUserId: number;
   username: string;
   email: string;
+  role: 'admin' | 'pickup' | 'data_entry';
 }
 
 export default function Home() {
@@ -46,6 +47,7 @@ export default function Home() {
         wpUserId: data.user.id,
         username: data.user.username,
         email: data.user.email,
+        role: data.user.role,
       });
       setPassword('');
     } finally {
@@ -85,7 +87,7 @@ export default function Home() {
                 AI intake workspace for receipt capture and shipment review
               </h1>
               <p className="mt-4 max-w-md text-base leading-7 text-slate-600">
-                Staff sign in here before capturing merchant pickup receipts, sending photos to Hermes OCR, and reviewing extracted shipment data.
+                Staff sign in here before capturing merchant pickup receipts, sending photos to Hermes OCR, or reviewing extracted shipment data.
               </p>
             </div>
           </div>
@@ -178,7 +180,8 @@ export default function Home() {
       </header>
 
       <section className="mx-auto grid max-w-6xl gap-4 px-4 py-6 md:grid-cols-[1fr_1fr]">
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        {(user.role === 'admin' || user.role === 'pickup') && (
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-semibold text-slate-500">Phone flow</p>
           <h2 className="mt-1 text-lg font-bold text-[#17365F]">Capture pickup receipts</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -191,9 +194,11 @@ export default function Home() {
           >
             Open capture
           </Link>
-        </div>
+          </div>
+        )}
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        {(user.role === 'admin' || user.role === 'data_entry') && (
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-semibold text-slate-500">Laptop flow</p>
           <h2 className="mt-1 text-lg font-bold text-[#17365F]">Review extracted orders</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -206,7 +211,8 @@ export default function Home() {
           >
             Open review
           </Link>
-        </div>
+          </div>
+        )}
       </section>
     </main>
   );

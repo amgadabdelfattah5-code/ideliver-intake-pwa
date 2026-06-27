@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { SessionStatus } from '@prisma/client';
 
 // GET /api/review/queue → sessions ready_for_review grouped by merchant with counts
 export async function GET() {
-  const session = await requireAuth();
+    const session = await requireRole(['admin', 'data_entry']);
   if (session instanceof NextResponse) return session;
 
   try {

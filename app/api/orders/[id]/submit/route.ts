@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderStatus, SessionStatus } from '@prisma/client';
 
-import { requireAuth } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getLiquidShipBase } from '@/lib/wp-client';
 
@@ -61,7 +61,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const authSession = await requireAuth();
+  const authSession = await requireRole(['admin', 'data_entry']);
   if (authSession instanceof NextResponse) return authSession;
 
   const { id: orderId } = await params;
