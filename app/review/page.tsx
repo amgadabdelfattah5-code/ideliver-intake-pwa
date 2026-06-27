@@ -41,8 +41,8 @@ interface ReviewSession {
 
 const reviewFields = [
   ['recipientName', 'Recipient name'],
-  ['recipientPhone', 'Phone'],
   ['recipientAddress', 'Address'],
+  ['recipientPhone', 'Phone'],
   ['recipientGovernorate', 'Governorate'],
   ['product', 'Product'],
   ['price', 'Price'],
@@ -101,6 +101,22 @@ function formatErrorDetails(details: unknown): string {
   if (Array.isArray(details)) return details.join(' ');
   if (typeof details === 'string') return details;
   return '';
+}
+
+function reviewFieldClass(key: string): string {
+  switch (key) {
+    case 'recipientName':
+    case 'recipientPhone':
+    case 'recipientGovernorate':
+    case 'product':
+      return 'block md:col-span-2';
+    case 'recipientAddress':
+      return 'block md:col-span-10';
+    case 'notes':
+      return 'block md:col-span-12';
+    default:
+      return 'block md:col-span-3';
+  }
 }
 
 export default function ReviewPage() {
@@ -312,7 +328,7 @@ export default function ReviewPage() {
 
             {order && (
               <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="grid gap-3 md:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-12">
                   {reviewFields.map(([key, label]) => {
                     const fieldConfidence = confidenceForField(order.aiFields, key);
                     const validationFlag = validationFlagsFromFields(order.aiFields).find(
@@ -323,7 +339,7 @@ export default function ReviewPage() {
 
                     return (
                     <label
-                      className={key === 'recipientAddress' || key === 'notes' ? 'block md:col-span-3' : 'block'}
+                      className={reviewFieldClass(key)}
                       key={key}
                     >
                       <span className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">
