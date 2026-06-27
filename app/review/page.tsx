@@ -70,11 +70,16 @@ function moneyValue(value: string | undefined): number {
 }
 
 function formatMoneyValue(value: number): string {
-  return value > 0 ? String(value) : '';
+  return value > 0 ? value.toLocaleString('en-US') : '';
 }
 
 function calculateTotal(price: string | undefined, shippingFee: string | undefined): string {
   return formatMoneyValue(moneyValue(price) + moneyValue(shippingFee));
+}
+
+function formatMoneyInput(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  return digits ? Number(digits).toLocaleString('en-US') : '';
 }
 
 function hiddenDraftValue(order: ReviewOrder, key: string): string {
@@ -126,17 +131,18 @@ function reviewFieldClass(key: string): string {
     case 'recipientPhone':
     case 'recipientGovernorate':
     case 'product':
-      return 'block md:col-span-3';
+      return 'block md:col-span-4';
     case 'price':
+      return 'block md:col-span-3 md:col-start-1';
     case 'shippingFeePrinted':
     case 'total':
-      return 'block md:col-span-2';
-    case 'recipientAddress':
-      return 'block md:col-span-14';
-    case 'notes':
-      return 'block md:col-span-14';
-    default:
       return 'block md:col-span-3';
+    case 'recipientAddress':
+      return 'block md:col-span-17';
+    case 'notes':
+      return 'block md:col-span-16';
+    default:
+      return 'block md:col-span-4';
   }
 }
 
@@ -349,7 +355,7 @@ export default function ReviewPage() {
 
             {order && (
               <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="grid gap-3 md:grid-cols-[repeat(20,minmax(0,1fr))]">
+                <div className="grid gap-3 md:grid-cols-[repeat(25,minmax(0,1fr))]">
                   {reviewFields.map(([key, label]) => {
                     const fieldConfidence = confidenceForField(order.aiFields, key);
                     const validationFlag = validationFlagsFromFields(order.aiFields).find(
@@ -386,6 +392,8 @@ export default function ReviewPage() {
                           const value =
                             key === 'recipientPhone'
                               ? event.target.value.replace(/\D/g, '').slice(0, 11)
+                              : key === 'price' || key === 'shippingFeePrinted'
+                                ? formatMoneyInput(event.target.value)
                               : event.target.value;
 
                           setDraft((current) => {
