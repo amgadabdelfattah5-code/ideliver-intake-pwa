@@ -72,14 +72,12 @@ export default function Home() {
         <section className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-6">
           <div className="hidden lg:block">
             <div className="max-w-xl">
-              <div className="inline-flex rounded-md border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  alt="iDeliver"
-                  className="h-20 w-auto"
-                  src="/ideliver-logo.png"
-                />
-              </div>
+              <div
+                aria-label="iDeliver"
+                className="h-24 w-48 rounded-md border border-slate-200 bg-white bg-contain bg-center bg-no-repeat px-5 py-4 shadow-sm"
+                role="img"
+                style={{ backgroundImage: "url('/ideliver-logo.png')" }}
+              />
               <p className="mt-8 text-sm font-bold uppercase text-[#F27321]">
                 iDeliver Egypt
               </p>
@@ -95,10 +93,12 @@ export default function Home() {
           <section className="w-full rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-6">
               <div className="flex items-center gap-4">
-                <div className="flex h-16 w-28 items-center justify-center rounded-md border border-slate-200 bg-white p-2 shadow-sm">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img alt="iDeliver" className="max-h-12 w-auto" src="/ideliver-logo.png" />
-                </div>
+                <div
+                  aria-label="iDeliver"
+                  className="h-16 w-28 rounded-md border border-slate-200 bg-white bg-contain bg-center bg-no-repeat p-2 shadow-sm"
+                  role="img"
+                  style={{ backgroundImage: "url('/ideliver-logo.png')" }}
+                />
                 <div>
                   <p className="text-sm font-bold text-[#F27321]">iDeliver Egypt</p>
                   <h1 className="mt-1 text-2xl font-bold text-[#17365F]">Intake login</h1>
