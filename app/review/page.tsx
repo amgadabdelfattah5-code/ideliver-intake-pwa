@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { egyptGovernorates, normalizeEgyptGovernorate } from '@/lib/egypt-governorates';
 
@@ -148,6 +148,10 @@ function reviewFieldClass(key: string): string {
   }
 }
 
+function clampZoom(value: number): number {
+  return Math.min(4, Math.max(1, Number(value.toFixed(2))));
+}
+
 export default function ReviewPage() {
   const [queue, setQueue] = useState<QueueMerchant[]>([]);
   const [selectedSession, setSelectedSession] = useState<ReviewSession | null>(null);
@@ -155,6 +159,9 @@ export default function ReviewPage() {
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [imageZoom, setImageZoom] = useState(1);
+  const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
+  const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
   const pendingOrders = useMemo(
     () =>
@@ -164,6 +171,19 @@ export default function ReviewPage() {
     [selectedSession]
   );
   const order = pendingOrders[currentOrderIndex];
+
+  const resetImageView = () => {
+    setImageZoom(1);
+    setImagePan({ x: 0, y: 0 });
+  };
+
+  const changeImageZoom = (delta: number) => {
+    setImageZoom((current) => {
+      const next = clampZoom(current + delta);
+      if (next === 1) setImagePan({ x: 0, y: 0 });
+      return next;
+    });
+  };
 
   const loadQueue = async () => {
     setLoading(true);
@@ -191,6 +211,7 @@ export default function ReviewPage() {
     setSelectedSession(session);
     setCurrentOrderIndex(nextIndex);
     setDraft(fieldsToDraft(openOrders[nextIndex]?.correctedFields || openOrders[nextIndex]?.aiFields || null));
+    resetImageView();
   };
 
   useEffect(() => {
@@ -322,12 +343,65 @@ export default function ReviewPage() {
               </div>
 
               {order ? (
-                <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-950">
+                <div className="relative overflow-hidden rounded-md border border-slate-200 bg-slate-950">
+                  <div className="absolute right-2 top-2 z-10 flex gap-1">
+                    <button
+                      className="h-8 rounded bg-white/90 px-3 text-sm font-bold text-[#17365F]"
+                      onClick={() => changeImageZoom(0.25)}
+                      type="button"
+                    >
+                      +
+                    </button>
+                    <button
+                      className="h-8 rounded bg-white/90 px-3 text-sm font-bold text-[#17365F]"
+                      onClick={() => changeImageZoom(-0.25)}
+                      type="button"
+                    >
+                      -
+                    </button>
+                    <button
+                      className="h-8 rounded bg-white/90 px-3 text-xs font-bold text-[#17365F]"
+                      onClick={resetImageView}
+                      type="button"
+                    >
+                      Reset
+                    </button>
+                  </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     alt="Receipt"
-                    className="max-h-[62vh] min-h-[420px] w-full bg-slate-950 object-contain"
+                    className={`max-h-[62vh] min-h-[420px] w-full touch-none bg-slate-950 object-contain ${
+                      imageZoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''
+                    }`}
+                    onPointerDown={(event) => {
+                      if (imageZoom === 1) return;
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      dragRef.current = {
+                        x: event.clientX,
+                        y: event.clientY,
+                        panX: imagePan.x,
+                        panY: imagePan.y,
+                      };
+                    }}
+                    onPointerMove={(event) => {
+                      if (!dragRef.current) return;
+                      setImagePan({
+                        x: dragRef.current.panX + event.clientX - dragRef.current.x,
+                        y: dragRef.current.panY + event.clientY - dragRef.current.y,
+                      });
+                    }}
+                    onPointerUp={() => {
+                      dragRef.current = null;
+                    }}
+                    onWheel={(event) => {
+                      event.preventDefault();
+                      changeImageZoom(event.deltaY < 0 ? 0.25 : -0.25);
+                    }}
                     src={order.photoUrl}
+                    style={{
+                      transform: `translate(${imagePan.x}px, ${imagePan.y}px) scale(${imageZoom})`,
+                      transformOrigin: 'center',
+                    }}
                   />
                 </div>
               ) : (
