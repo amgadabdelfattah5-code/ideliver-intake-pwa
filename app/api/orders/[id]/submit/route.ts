@@ -43,6 +43,10 @@ function money(value: string): number {
   return Number.isFinite(normalized) ? normalized : 0;
 }
 
+function hasMoneyValue(value: string): boolean {
+  return value.trim() !== '' && Number.isFinite(Number(value.replace(/[^\d.]/g, '')));
+}
+
 function validateShipmentFields(fields: FieldMap): string[] {
   const errors: string[] = [];
 
@@ -56,8 +60,17 @@ function validateShipmentFields(fields: FieldMap): string[] {
   } else if (!isKnownEgyptGovernorate(fields.recipientGovernorate)) {
     errors.push('يجب اختيار المحافظة من قائمة محافظات iDeliver.');
   }
-  if (!fields.product) errors.push('المنتج مطلوب.');
-  if (money(fields.COD) <= 0) errors.push('يجب أن تكون قيمة التحصيل أكبر من صفر.');
+  if (!hasMoneyValue(fields.price)) {
+    errors.push('سعر المنتج مطلوب. اكتب 0 إذا لم توجد قيمة.');
+  }
+  if (!hasMoneyValue(fields.shippingFeePrinted)) {
+    errors.push('مصاريف الشحن مطلوبة. اكتب 0 إذا لم توجد قيمة.');
+  }
+  if (!fields.COD) {
+    errors.push('الإجمالي مطلوب.');
+  } else if (money(fields.COD) <= 0) {
+    errors.push('يجب أن تكون قيمة الإجمالي أكبر من صفر.');
+  }
 
   return errors;
 }
