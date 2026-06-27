@@ -77,7 +77,7 @@ export default function Home() {
                 <img
                   alt="iDeliver"
                   className="h-20 w-auto"
-                  src="/ideliver-logo.svg"
+                  src="/ideliver-logo.png"
                 />
               </div>
               <p className="mt-8 text-sm font-bold uppercase text-[#F27321]">
@@ -97,7 +97,7 @@ export default function Home() {
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-28 items-center justify-center rounded-md border border-slate-200 bg-white p-2 shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img alt="iDeliver" className="max-h-12 w-auto" src="/ideliver-logo.svg" />
+                  <img alt="iDeliver" className="max-h-12 w-auto" src="/ideliver-logo.png" />
                 </div>
                 <div>
                   <p className="text-sm font-bold text-[#F27321]">iDeliver Egypt</p>
