@@ -73,11 +73,6 @@ function confidenceForField(fields: AiFields | null, key: string): number | null
   return typeof value === 'number' ? value : null;
 }
 
-function warningsFromFields(fields: AiFields | null): string[] {
-  const warnings = fields?.warnings;
-  return Array.isArray(warnings) ? warnings.map(String) : [];
-}
-
 function validationFlagsFromFields(fields: AiFields | null): ValidationFlag[] {
   const flags = fields?.validationFlags;
   if (!Array.isArray(flags)) return [];
@@ -305,35 +300,6 @@ export default function ReviewPage() {
 
             {order && (
               <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="mb-5 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
-                  <div className="rounded-md bg-slate-50 p-3">
-                    <p className="text-xs font-semibold uppercase text-slate-500">AI confidence</p>
-                    <p className="mt-1 text-3xl font-bold text-[#17365F]">
-                      {order.confidence == null ? 'N/A' : `${Math.round(order.confidence * 100)}%`}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    {warningsFromFields(order.aiFields).length > 0 && (
-                      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
-                        {warningsFromFields(order.aiFields).map((warning) => (
-                          <p className="text-xs font-semibold text-amber-800" key={warning}>
-                            {warning}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                    {validationFlagsFromFields(order.aiFields).length > 0 && (
-                      <div className="space-y-1 rounded-md border border-red-200 bg-red-50 px-3 py-2">
-                        {validationFlagsFromFields(order.aiFields).map((flag) => (
-                          <p className="text-xs font-semibold text-red-800" key={`${flag.field}-${flag.message}`}>
-                            {flag.message}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 <div className="grid gap-3 md:grid-cols-2">
                   {reviewFields.map(([key, label]) => {
                     const fieldConfidence = confidenceForField(order.aiFields, key);
