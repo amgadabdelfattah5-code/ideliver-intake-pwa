@@ -126,14 +126,15 @@ function reviewFieldClass(key: string): string {
     case 'recipientPhone':
     case 'recipientGovernorate':
     case 'product':
+      return 'block md:col-span-3';
     case 'price':
     case 'shippingFeePrinted':
     case 'total':
       return 'block md:col-span-2';
     case 'recipientAddress':
-      return 'block md:col-span-8';
+      return 'block md:col-span-14';
     case 'notes':
-      return 'block md:col-span-12';
+      return 'block md:col-span-14';
     default:
       return 'block md:col-span-3';
   }
@@ -348,7 +349,7 @@ export default function ReviewPage() {
 
             {order && (
               <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="grid gap-3 md:grid-cols-12">
+                <div className="grid gap-3 md:grid-cols-[repeat(20,minmax(0,1fr))]">
                   {reviewFields.map(([key, label]) => {
                     const fieldConfidence = confidenceForField(order.aiFields, key);
                     const validationFlag = validationFlagsFromFields(order.aiFields).find(
