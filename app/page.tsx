@@ -182,35 +182,35 @@ export default function Home() {
       <section className="mx-auto grid max-w-6xl gap-4 px-4 py-6 md:grid-cols-[1fr_1fr]">
         {(user.role === 'admin' || user.role === 'pickup') && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-slate-500">Phone flow</p>
-          <h2 className="mt-1 text-lg font-bold text-[#17365F]">Capture pickup receipts</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Search a merchant, start one pickup session, photograph each receipt, then send the
-            session into extraction.
-          </p>
-          <Link
-            className="mt-5 inline-flex h-10 items-center rounded-md bg-[#F27321] px-4 text-sm font-semibold text-white hover:bg-[#d96318]"
-            href="/capture"
-          >
-            Open capture
-          </Link>
+            <p className="text-sm font-semibold text-slate-500">Phone flow</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">Capture pickup receipts</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Search a merchant, start one pickup session, photograph each receipt, then send the
+              session into extraction.
+            </p>
+            <Link
+              className="mt-5 inline-flex h-10 items-center rounded-md bg-[#F27321] px-4 text-sm font-semibold text-white hover:bg-[#d96318]"
+              href="/capture"
+            >
+              Open capture
+            </Link>
           </div>
         )}
 
-        {(user.role === 'admin' || user.role === 'data_entry') && (
+        {(user.role === 'admin' || user.role === 'pickup' || user.role === 'data_entry') && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-slate-500">Laptop flow</p>
-          <h2 className="mt-1 text-lg font-bold text-[#17365F]">Review extracted orders</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Work ready sessions by merchant, compare photos against AI fields, correct data, and
-            submit shipments.
-          </p>
-          <Link
-            className="mt-5 inline-flex h-10 items-center rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white hover:bg-[#102947]"
-            href="/review"
-          >
-            Open review
-          </Link>
+            <p className="text-sm font-semibold text-slate-500">Review flow</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">Review queue</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Work ready sessions by merchant, compare photos against AI fields, correct data, and
+              submit shipments.
+            </p>
+            <Link
+              className="mt-5 inline-flex h-10 items-center rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white hover:bg-[#102947]"
+              href="/review"
+            >
+              Open review
+            </Link>
           </div>
         )}
       </section>

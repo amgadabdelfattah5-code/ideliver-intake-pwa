@@ -61,7 +61,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const authSession = await requireRole(['admin', 'data_entry']);
+  const authSession = await requireRole(['admin', 'pickup', 'data_entry']);
   if (authSession instanceof NextResponse) return authSession;
 
   const { id: orderId } = await params;

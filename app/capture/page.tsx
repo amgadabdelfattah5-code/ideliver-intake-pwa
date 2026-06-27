@@ -299,7 +299,7 @@ export default function CapturePage() {
               <div className="grid gap-3">
                 <Link
                   className="flex h-12 items-center justify-center rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white"
-                  href="/review"
+                  href={sessionId ? `/review?session=${encodeURIComponent(sessionId)}` : '/review'}
                 >
                   Open review queue
                 </Link>

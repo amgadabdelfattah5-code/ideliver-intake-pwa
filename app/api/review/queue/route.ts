@@ -5,7 +5,7 @@ import { SessionStatus } from '@prisma/client';
 
 // GET /api/review/queue → sessions ready_for_review grouped by merchant with counts
 export async function GET() {
-    const session = await requireRole(['admin', 'data_entry']);
+  const session = await requireRole(['admin', 'pickup', 'data_entry']);
   if (session instanceof NextResponse) return session;
 
   try {

@@ -192,6 +192,13 @@ export default function ReviewPage() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
+      const sessionId = new URLSearchParams(window.location.search).get('session');
+
+      if (sessionId) {
+        void loadSession(sessionId).finally(() => setLoading(false));
+        return;
+      }
+
       void loadQueue();
     }, 0);
 

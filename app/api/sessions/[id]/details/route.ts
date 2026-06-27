@@ -7,7 +7,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await requireRole(['admin', 'data_entry']);
+  const session = await requireRole(['admin', 'pickup', 'data_entry']);
   if (session instanceof NextResponse) return session;
 
   const { id } = await params;
