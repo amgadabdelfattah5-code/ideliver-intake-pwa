@@ -22,6 +22,8 @@ interface CapturedPhoto {
 
 type CaptureStatus = 'idle' | 'searching' | 'creating' | 'capturing' | 'sending' | 'sent';
 
+const maxBulkPhotos = 20;
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -39,8 +41,10 @@ export default function CapturePage() {
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [status, setStatus] = useState<CaptureStatus>('idle');
   const [message, setMessage] = useState('');
+  const [uploadProgress, setUploadProgress] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const bulkInputRef = useRef<HTMLInputElement>(null);
 
   const searchMerchants = async () => {
     setMessage('');
@@ -91,38 +95,86 @@ export default function CapturePage() {
     }
   };
 
+  const uploadPhoto = async (file: File) => {
+    if (!sessionId) throw new Error('No active session');
+
+    const photoDataUrl = await fileToDataUrl(file);
+
+    const response = await fetch(`/api/sessions/${sessionId}/photos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photoDataUrl }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Photo upload failed');
+    }
+
+    setPhotos((current) => [
+      ...current,
+      {
+        orderId: data.order.id,
+        sequence: data.order.sequence,
+        previewUrl: URL.createObjectURL(file),
+      },
+    ]);
+  };
+
   const capturePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !sessionId) return;
 
     setMessage('');
+    setUploadProgress('');
     setStatus('capturing');
 
     try {
-      const photoDataUrl = await fileToDataUrl(file);
-
-      const response = await fetch(`/api/sessions/${sessionId}/photos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoDataUrl }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(data.error || 'Photo upload failed');
-        return;
-      }
-
-      setPhotos((current) => [
-        ...current,
-        {
-          orderId: data.order.id,
-          sequence: data.order.sequence,
-          previewUrl: URL.createObjectURL(file),
-        },
-      ]);
+      await uploadPhoto(file);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Photo upload failed');
     } finally {
       event.target.value = '';
+      setUploadProgress('');
+      setStatus('idle');
+    }
+  };
+
+  const bulkUploadPhotos = async (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0 || !sessionId) return;
+
+    const files = selectedFiles.slice(0, maxBulkPhotos);
+    setMessage(
+      selectedFiles.length > maxBulkPhotos
+        ? `Only the first ${maxBulkPhotos} photos will be uploaded in this batch.`
+        : ''
+    );
+    setStatus('capturing');
+
+    let currentProgress = 'Bulk upload';
+
+    try {
+      for (const [index, file] of files.entries()) {
+        currentProgress = `Uploading ${index + 1} of ${files.length}`;
+        setUploadProgress(currentProgress);
+        await uploadPhoto(file);
+      }
+
+      setMessage(
+        selectedFiles.length > maxBulkPhotos
+          ? `First ${files.length} photos uploaded. Start another batch for the remaining photos.`
+          : `${files.length} photos uploaded. Review thumbnails, then send to Hermes OCR.`
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? `${currentProgress} failed: ${error.message}`
+          : 'Bulk upload failed'
+      );
+    } finally {
+      event.target.value = '';
+      setUploadProgress('');
       setStatus('idle');
     }
   };
@@ -160,6 +212,7 @@ export default function CapturePage() {
     setPhotos([]);
     setStatus('idle');
     setMessage('');
+    setUploadProgress('');
   };
 
   return (
@@ -271,20 +324,45 @@ export default function CapturePage() {
               capture="environment"
               className="hidden"
               onChange={capturePhoto}
-              ref={fileInputRef}
+              ref={cameraInputRef}
+              type="file"
+            />
+            <input
+              accept="image/*"
+              className="hidden"
+              multiple
+              onChange={bulkUploadPhotos}
+              ref={bulkInputRef}
               type="file"
             />
 
             {status !== 'sent' ? (
               <div className="grid gap-3">
-                <button
-                  className="h-12 rounded-md bg-[#F27321] px-4 text-sm font-semibold text-white disabled:opacity-60"
-                  disabled={status === 'capturing' || status === 'sending'}
-                  onClick={() => fileInputRef.current?.click()}
-                  type="button"
-                >
-                  {status === 'capturing' ? 'Uploading photo...' : 'Capture receipt'}
-                </button>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    className="h-12 rounded-md bg-[#F27321] px-4 text-sm font-semibold text-white disabled:opacity-60"
+                    disabled={status === 'capturing' || status === 'sending'}
+                    onClick={() => cameraInputRef.current?.click()}
+                    type="button"
+                  >
+                    {status === 'capturing' ? 'Uploading...' : 'Capture receipt'}
+                  </button>
+
+                  <button
+                    className="h-12 rounded-md border border-[#17365F] bg-white px-4 text-sm font-semibold text-[#17365F] disabled:opacity-60"
+                    disabled={status === 'capturing' || status === 'sending'}
+                    onClick={() => bulkInputRef.current?.click()}
+                    type="button"
+                  >
+                    Bulk upload
+                  </button>
+                </div>
+
+                {uploadProgress && (
+                  <p className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#17365F]">
+                    {uploadProgress}
+                  </p>
+                )}
 
                 <button
                   className="h-12 rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white disabled:opacity-60"
