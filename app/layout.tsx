@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "iDeliver Intake",
-  description: "Internal pickup intake and shipment review PWA for iDeliver Egypt.",
+  description: "مساحة عمل داخلية لتصوير إيصالات الاستلام ومراجعة بيانات الشحن لتوصيل iDeliver مصر.",
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="ar" dir="rtl" className="h-full antialiased">
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

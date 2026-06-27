@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { SessionStatus } from '@prisma/client';
+import { OrderStatus, SessionStatus } from '@prisma/client';
 
-// GET /api/review/queue → sessions ready_for_review grouped by merchant with counts
+// GET /api/review/queue → sessions ready_for_review grouped by merchant with counts.
+// orderCount reflects only orders still pending review (excludes submitted / awaiting_merchant),
+// so the queue shrinks as data entry submits each shipment.
 export async function GET() {
   const session = await requireRole(['admin', 'pickup', 'data_entry']);
   if (session instanceof NextResponse) return session;
@@ -13,14 +15,20 @@ export async function GET() {
       where: { status: SessionStatus.ready_for_review },
       include: {
         merchant: true,
-        _count: { select: { orders: true } },
+        orders: {
+          where: {
+            status: { notIn: [OrderStatus.submitted, OrderStatus.awaiting_merchant] },
+          },
+          select: { id: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Group by merchant
+    // Group by merchant; drop sessions whose orders are all submitted/awaiting.
     const byMerchant = new Map<number, typeof sessions>();
     for (const s of sessions) {
+      if (s.orders.length === 0) continue;
       if (!byMerchant.has(s.merchant.wpUserId)) {
         byMerchant.set(s.merchant.wpUserId, []);
       }
@@ -35,7 +43,7 @@ export async function GET() {
         id: s.id,
         photoCount: s.photoCount,
         createdAt: s.createdAt,
-        orderCount: s._count.orders,
+        orderCount: s.orders.length,
       })),
     }));
 
@@ -45,7 +53,7 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to fetch queue', details: error },
+      { error: 'تعذّر تحميل قائمة المراجعة', details: error },
       { status: 500 }
     );
   }

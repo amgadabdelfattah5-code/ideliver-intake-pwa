@@ -39,7 +39,7 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Login failed');
+        setError(data.error || 'فشل تسجيل الدخول');
         return;
       }
 
@@ -63,7 +63,7 @@ export default function Home() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-4">
-        <p className="text-sm font-medium text-[#17365F]">Loading iDeliver Intake...</p>
+        <p className="text-sm font-medium text-[#17365F]">جاري تحميل iDeliver Intake...</p>
       </main>
     );
   }
@@ -84,10 +84,11 @@ export default function Home() {
                 iDeliver Egypt
               </p>
               <h1 className="mt-3 max-w-lg text-4xl font-bold leading-tight text-[#17365F]">
-                AI intake workspace for receipt capture and shipment review
+                مساحة عمل مدعومة بالذكاء الاصطناعي لتصوير الإيصالات ومراجعة الشحنات
               </h1>
               <p className="mt-4 max-w-md text-base leading-7 text-slate-600">
-                Staff sign in here before capturing merchant pickup receipts, sending photos to Hermes OCR, or reviewing extracted shipment data.
+                يسجّل الموظفون الدخول هنا قبل تصوير إيصالات استلام التُجّار، أو إرسال الصور
+                لاستخراج البيانات، أو مراجعة بيانات الشحنات المُستخرجة.
               </p>
             </div>
           </div>
@@ -103,17 +104,17 @@ export default function Home() {
                 />
                 <div>
                   <p className="text-sm font-bold text-[#F27321]">iDeliver Egypt</p>
-                  <h1 className="mt-1 text-2xl font-bold text-[#17365F]">Intake login</h1>
+                  <h1 className="mt-1 text-2xl font-bold text-[#17365F]">تسجيل الدخول</h1>
                 </div>
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-600">
-                Use your WordPress account and app password to access the internal PWA.
+                استخدم حساب WordPress وكلمة مرور التطبيق للوصول إلى مساحة العمل الداخلية.
               </p>
             </div>
 
           <form className="space-y-4" onSubmit={handleLogin}>
             <label className="block">
-              <span className="text-sm font-semibold text-[#17365F]">WordPress user</span>
+              <span className="text-sm font-semibold text-[#17365F]">مستخدم WordPress</span>
               <input
                 className="mt-1 h-12 w-full rounded-md border border-slate-300 bg-white px-3 text-base font-medium text-[#17365F] shadow-sm outline-none placeholder:text-slate-400 focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/25"
                 value={username}
@@ -124,14 +125,14 @@ export default function Home() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-semibold text-[#17365F]">App password</span>
+              <span className="text-sm font-semibold text-[#17365F]">كلمة مرور التطبيق</span>
               <input
                 className="mt-1 h-12 w-full rounded-md border border-slate-300 bg-white px-3 text-base font-medium text-[#17365F] shadow-sm outline-none placeholder:text-slate-400 focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/25"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 type="password"
                 autoComplete="current-password"
-                placeholder="WordPress app password"
+                placeholder="كلمة مرور تطبيق WordPress"
               />
             </label>
 
@@ -146,13 +147,13 @@ export default function Home() {
               disabled={submitting || !username || !password}
               type="submit"
             >
-              {submitting ? 'Signing in...' : 'Sign in'}
+              {submitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
           </form>
 
             <div className="mt-5 border-t border-slate-100 pt-4">
               <p className="text-xs font-medium leading-5 text-slate-500">
-                Protected staff workspace for capture, OCR review, and shipment submission.
+                مساحة عمل محمية للموظفين لتصوير الإيصالات ومراجعة البيانات وإرسال الشحنات.
               </p>
             </div>
         </section>
@@ -167,14 +168,14 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div>
             <p className="text-sm font-semibold text-[#F27321]">iDeliver Egypt</p>
-            <h1 className="text-xl font-bold text-[#17365F]">Intake workspace</h1>
+            <h1 className="text-xl font-bold text-[#17365F]">مساحة العمل</h1>
           </div>
           <button
             className="idv-button idv-button-light idv-button-small text-sm"
             onClick={handleLogout}
             type="button"
           >
-            Sign out
+            تسجيل الخروج
           </button>
         </div>
       </header>
@@ -182,34 +183,32 @@ export default function Home() {
       <section className="mx-auto grid max-w-6xl gap-4 px-4 py-6 md:grid-cols-[1fr_1fr]">
         {(user.role === 'admin' || user.role === 'pickup') && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-500">Phone flow</p>
-            <h2 className="mt-1 text-lg font-bold text-[#17365F]">Capture pickup receipts</h2>
+            <p className="text-sm font-semibold text-slate-500">تدفّق الهاتف</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">تصوير إيصالات الاستلام</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Search a merchant, start one pickup session, photograph each receipt, then send the
-              session into extraction.
+              ابحث عن تاجر، ابدأ جلسة استلام واحدة، صور كل إيصال، ثم أرسل الجلسة لاستخراج البيانات.
             </p>
             <Link
               className="idv-button idv-button-orange mt-5 h-10 text-sm"
               href="/capture"
             >
-              Open capture
+              فتح التصوير
             </Link>
           </div>
         )}
 
         {(user.role === 'admin' || user.role === 'pickup' || user.role === 'data_entry') && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-500">Review flow</p>
-            <h2 className="mt-1 text-lg font-bold text-[#17365F]">Review queue</h2>
+            <p className="text-sm font-semibold text-slate-500">تدفّق المراجعة</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">قائمة المراجعة</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Work ready sessions by merchant, compare photos against AI fields, correct data, and
-              submit shipments.
+              عالج الجلسات الجاهزة حسب التاجر، قارن الصور بالبيانات المُستخرجة، صحّح، ثم أرسل الشحنات.
             </p>
             <Link
               className="idv-button mt-5 h-10 text-sm"
               href="/review"
             >
-              Open review
+              فتح المراجعة
             </Link>
           </div>
         )}

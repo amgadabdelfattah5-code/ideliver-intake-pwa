@@ -24,7 +24,7 @@ async function readPhoto(req: NextRequest): Promise<UploadedPhoto> {
     const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
 
     if (!match) {
-      throw new Error('photoDataUrl must be a base64 data URL');
+      throw new Error('صيغة الصورة غير صحيحة');
     }
 
     return {
@@ -34,12 +34,12 @@ async function readPhoto(req: NextRequest): Promise<UploadedPhoto> {
   }
 
   if (!contentType.includes('multipart/form-data')) {
-    throw new Error('photo upload must be multipart/form-data or application/json');
+    throw new Error('صيغة رفع الصورة غير مدعومة');
   }
 
   const boundary = getBoundary(contentType);
   if (!boundary) {
-    throw new Error('multipart boundary missing');
+    throw new Error('بيانات رفع الصورة غير مكتملة');
   }
 
   const body = Buffer.from(await req.arrayBuffer());
@@ -66,7 +66,7 @@ async function readPhoto(req: NextRequest): Promise<UploadedPhoto> {
         );
 
         if (bytes.length === 0) {
-          throw new Error('photo file is empty');
+          throw new Error('ملف الصورة فارغ');
         }
 
         return {
@@ -79,7 +79,7 @@ async function readPhoto(req: NextRequest): Promise<UploadedPhoto> {
     cursor = next;
   }
 
-  throw new Error('photo file required');
+  throw new Error('ملف الصورة مطلوب');
 }
 
 export async function POST(
@@ -133,7 +133,7 @@ export async function POST(
   } catch (error) {
     return NextResponse.json(
       {
-        error: 'Failed to store photo',
+        error: 'فشل حفظ الصورة',
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

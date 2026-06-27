@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const { username, password } = body;
 
     if (!username || !password) {
-      return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
+      return NextResponse.json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' }, { status: 400 });
     }
 
     const localAccount = verifyLocalPwaAccount(username, password);
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     });
 
     if (!wpVerify.ok) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      return NextResponse.json({ error: 'بيانات الدخول غير صحيحة' }, { status: 401 });
     }
 
     const wpUser = await wpVerify.json();
@@ -76,6 +76,6 @@ export async function POST(req: Request) {
       user: { id: wpUser.id, username: displayName, email, role: 'admin' },
     });
   } catch {
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
+    return NextResponse.json({ error: 'فشل تسجيل الدخول' }, { status: 500 });
   }
 }

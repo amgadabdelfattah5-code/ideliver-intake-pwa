@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const { merchantId } = body;
 
     if (!merchantId) {
-      return NextResponse.json({ error: 'merchantId required' }, { status: 400 });
+      return NextResponse.json({ error: 'رقم التاجر مطلوب' }, { status: 400 });
     }
 
     const merchant = await prisma.merchant.findUnique({
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!merchant) {
-      return NextResponse.json({ error: 'Merchant not found in local cache' }, { status: 404 });
+      return NextResponse.json({ error: 'التاجر غير موجود في قاعدة بيانات التطبيق' }, { status: 404 });
     }
 
     const newSession = await prisma.session.create({
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to create session', details: error },
+      { error: 'تعذّر بدء الجلسة', details: error },
       { status: 500 }
     );
   }

@@ -24,7 +24,7 @@ export async function GET(
     });
 
     if (!sessionData) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      return NextResponse.json({ error: 'الجلسة غير موجودة' }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -33,7 +33,7 @@ export async function GET(
     });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to fetch session', details: error },
+      { error: 'تعذّر تحميل الجلسة', details: error },
       { status: 500 }
     );
   }

@@ -42,15 +42,15 @@ interface ReviewSession {
 }
 
 const reviewFields = [
-  ['recipientName', 'Recipient name'],
-  ['recipientAddress', 'Address'],
-  ['recipientGovernorate', 'Governorate'],
-  ['recipientPhone', 'Phone'],
-  ['product', 'Product'],
-  ['price', 'Price'],
-  ['shippingFeePrinted', 'Shipping fees'],
-  ['total', 'Total'],
-  ['notes', 'Notes'],
+  ['recipientName', 'اسم المستلم'],
+  ['recipientAddress', 'العنوان'],
+  ['recipientGovernorate', 'المحافظة'],
+  ['recipientPhone', 'رقم الهاتف'],
+  ['product', 'المنتج'],
+  ['price', 'سعر المنتج'],
+  ['shippingFeePrinted', 'مصاريف الشحن'],
+  ['total', 'الإجمالي'],
+  ['notes', 'ملاحظات'],
 ];
 
 function fieldsToDraft(fields: AiFields | null): Record<string, string> {
@@ -166,6 +166,7 @@ export default function ReviewPage() {
   const [imageZoom, setImageZoom] = useState(1);
   const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
   const [pricingMode, setPricingMode] = useState<'sum' | 'fromTotal'>('sum');
+  const [submitting, setSubmitting] = useState(false);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
   const pendingOrders = useMemo(
@@ -203,7 +204,7 @@ export default function ReviewPage() {
     const data = await response.json();
 
     if (!response.ok) {
-      setMessage(data.error || 'Could not load session');
+      setMessage(data.error || 'تعذّر تحميل الجلسة');
       return;
     }
 
@@ -236,7 +237,10 @@ export default function ReviewPage() {
   }, []);
 
   const submitOrder = async () => {
-    if (!order || !selectedSession) return;
+    if (!order || !selectedSession || submitting) return;
+
+    setSubmitting(true);
+    setMessage('');
 
     const correctedFields = {
       ...draft,
@@ -245,36 +249,46 @@ export default function ReviewPage() {
       shippingFeePrinted: draft.shippingFeePrinted || hiddenDraftValue(order, 'shippingFeePrinted'),
     };
 
-    setMessage('');
-    const response = await fetch(`/api/orders/${order.id}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ correctedFields }),
-    });
-    const data = await response.json();
+    try {
+      const response = await fetch(`/api/orders/${order.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ correctedFields }),
+      });
+      const data = await response.json();
 
-    if (!response.ok) {
-      const details = formatErrorDetails(data.details);
-      setMessage(details ? `${data.error || 'Submit failed'}: ${details}` : data.error || 'Submit failed');
-      return;
+      if (!response.ok) {
+        const details = formatErrorDetails(data.details);
+        setMessage(details ? `${data.error || 'فشل الإرسال'}: ${details}` : data.error || 'فشل الإرسال');
+        return;
+      }
+
+      if (data.alreadySubmitted) {
+        setMessage('تم إرسال هذا الطلب من قبل.');
+      } else {
+        setMessage('تم إرسال الطلب. تم تحميل الإيصال التالي.');
+      }
+
+      if (data.remainingInSession === 0) {
+        setSelectedSession(null);
+        setCurrentOrderIndex(0);
+        await loadQueue();
+        setMessage('اكتملت جميع طلبات الجلسة.');
+        return;
+      }
+
+      await loadSession(selectedSession.id, currentOrderIndex);
+    } catch {
+      setMessage('تعذّر إرسال الطلب. حاول مرة أخرى.');
+    } finally {
+      setSubmitting(false);
     }
-
-    if (data.remainingInSession === 0) {
-      setSelectedSession(null);
-      setCurrentOrderIndex(0);
-      await loadQueue();
-      setMessage('Session completed.');
-      return;
-    }
-
-    await loadSession(selectedSession.id, currentOrderIndex);
-    setMessage('Order submitted. Next receipt loaded.');
   };
 
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-4">
-        <p className="text-sm font-medium text-[#17365F]">Loading review queue...</p>
+        <p className="text-sm font-medium text-[#17365F]">جاري تحميل قائمة المراجعة...</p>
       </main>
     );
   }
@@ -284,10 +298,10 @@ export default function ReviewPage() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2">
           <div>
-            <h1 className="text-xl font-bold text-[#17365F]">Review queue</h1>
+            <h1 className="text-xl font-bold text-[#17365F]">قائمة المراجعة</h1>
           </div>
           <Link className="text-sm font-medium text-[#17365F]" href="/">
-            Home
+            الرئيسية
           </Link>
         </div>
       </header>
@@ -296,7 +310,7 @@ export default function ReviewPage() {
         {!selectedSession ? (
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
             {queue.length === 0 ? (
-              <p className="p-5 text-sm font-medium text-slate-600">No ready sessions.</p>
+              <p className="p-5 text-sm font-medium text-slate-600">لا توجد جلسات جاهزة للمراجعة.</p>
             ) : (
               <div className="divide-y divide-slate-100">
                 {queue.map((merchant) => (
@@ -312,13 +326,13 @@ export default function ReviewPage() {
                         >
                           <span>
                             <span className="block text-sm font-semibold text-slate-800">
-                              {session.orderCount} orders
+                              {session.orderCount} طلب
                             </span>
                             <span className="block text-xs text-slate-500">
-                              {new Date(session.createdAt).toLocaleString()}
+                              {new Date(session.createdAt).toLocaleString('ar-EG')}
                             </span>
                           </span>
-                          <span className="text-sm font-semibold text-[#F27321]">Open</span>
+                          <span className="text-sm font-semibold text-[#F27321]">فتح</span>
                         </button>
                       ))}
                     </div>
@@ -336,7 +350,7 @@ export default function ReviewPage() {
                     {selectedSession.merchant.name}
                   </h2>
                   <p className="text-sm text-slate-500">
-                    Order {currentOrderIndex + 1} of {pendingOrders.length}
+                    الطلب {currentOrderIndex + 1} من {pendingOrders.length}
                   </p>
                 </div>
                 <button
@@ -344,7 +358,7 @@ export default function ReviewPage() {
                   onClick={() => setSelectedSession(null)}
                   type="button"
                 >
-                  Back
+                  رجوع
                 </button>
               </div>
 
@@ -370,12 +384,12 @@ export default function ReviewPage() {
                       onClick={resetImageView}
                       type="button"
                     >
-                      Reset
+                      إعادة
                     </button>
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    alt="Receipt"
+                    alt="إيصال"
                     className={`max-h-[62vh] min-h-[420px] w-full touch-none bg-slate-950 object-contain ${
                       imageZoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''
                     }`}
@@ -412,7 +426,7 @@ export default function ReviewPage() {
                 </div>
               ) : (
                 <p className="rounded-md bg-slate-50 p-4 text-sm text-slate-600">
-                  No unsubmitted orders in this session.
+                  لا توجد طلبات غير مُرسلة في هذه الجلسة.
                 </p>
               )}
             </div>
@@ -446,7 +460,7 @@ export default function ReviewPage() {
                         className={`mt-1 h-10 w-full rounded-md border px-3 text-base font-medium text-[#17365F] outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20 ${
                           needsAttention ? 'border-amber-300 bg-amber-50' : 'border-slate-300'
                         }`}
-                        placeholder={key === 'recipientGovernorate' ? 'Type to search governorate' : undefined}
+                        placeholder={key === 'recipientGovernorate' ? 'ابحث عن المحافظة' : undefined}
                         value={draft[key] || ''}
                         inputMode={
                           key === 'recipientPhone' || key === 'price' || key === 'shippingFeePrinted' || key === 'total'
@@ -506,10 +520,11 @@ export default function ReviewPage() {
                 <div className="mt-3">
                   <button
                     className="idv-button h-11 w-full text-sm"
+                    disabled={submitting}
                     onClick={submitOrder}
                     type="button"
                   >
-                    Submit shipment
+                    {submitting ? 'جاري الإرسال...' : 'إرسال الشحنة'}
                   </button>
                 </div>
               </div>

@@ -30,7 +30,7 @@ export async function POST(
     });
 
     if (updatedSession.orders.length === 0) {
-      return NextResponse.json({ error: 'Cannot send a session with no photos' }, { status: 400 });
+      return NextResponse.json({ error: 'لا يمكن إرسال جلسة بدون صور' }, { status: 400 });
     }
 
     await prisma.actionLog.create({
@@ -74,7 +74,7 @@ export async function POST(
 
     return NextResponse.json(
       {
-        error: 'Failed to send session for OCR extraction',
+        error: 'فشل إرسال الجلسة لاستخراج البيانات',
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

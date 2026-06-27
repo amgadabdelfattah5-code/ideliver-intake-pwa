@@ -24,6 +24,19 @@ type CaptureStatus = 'idle' | 'searching' | 'creating' | 'capturing' | 'sending'
 
 const maxBulkPhotos = 20;
 
+const statusLabels: Record<CaptureStatus, string> = {
+  idle: 'في الانتظار',
+  searching: 'جاري البحث',
+  creating: 'جاري الإنشاء',
+  capturing: 'جاري الرفع',
+  sending: 'جاري الإرسال',
+  sent: 'تم الإرسال',
+};
+
+function statusLabel(status: CaptureStatus): string {
+  return statusLabels[status];
+}
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -56,7 +69,7 @@ export default function CapturePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error || 'Merchant search failed');
+        setMessage(data.error || 'فشل البحث عن التاجر');
         return;
       }
 
@@ -80,7 +93,7 @@ export default function CapturePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error || 'Could not start session');
+        setMessage(data.error || 'تعذّر بدء الجلسة');
         return;
       }
 
@@ -96,7 +109,7 @@ export default function CapturePage() {
   };
 
   const uploadPhoto = async (file: File) => {
-    if (!sessionId) throw new Error('No active session');
+    if (!sessionId) throw new Error('لا توجد جلسة نشطة');
 
     const photoDataUrl = await fileToDataUrl(file);
 
@@ -108,7 +121,7 @@ export default function CapturePage() {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'Photo upload failed');
+      throw new Error(data.error || 'فشل رفع الصورة');
     }
 
     setPhotos((current) => [
@@ -132,7 +145,7 @@ export default function CapturePage() {
     try {
       await uploadPhoto(file);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Photo upload failed');
+      setMessage(error instanceof Error ? error.message : 'فشل رفع الصورة');
     } finally {
       event.target.value = '';
       setUploadProgress('');
@@ -147,30 +160,30 @@ export default function CapturePage() {
     const files = selectedFiles.slice(0, maxBulkPhotos);
     setMessage(
       selectedFiles.length > maxBulkPhotos
-        ? `Only the first ${maxBulkPhotos} photos will be uploaded in this batch.`
+        ? `سيتم رفع أول ${maxBulkPhotos} صورة فقط في هذه الدفعة.`
         : ''
     );
     setStatus('capturing');
 
-    let currentProgress = 'Bulk upload';
+    let currentProgress = 'رفع جماعي';
 
     try {
       for (const [index, file] of files.entries()) {
-        currentProgress = `Uploading ${index + 1} of ${files.length}`;
+        currentProgress = `جاري رفع الصورة ${index + 1} من ${files.length}`;
         setUploadProgress(currentProgress);
         await uploadPhoto(file);
       }
 
       setMessage(
         selectedFiles.length > maxBulkPhotos
-          ? `First ${files.length} photos uploaded. Start another batch for the remaining photos.`
-          : `${files.length} photos uploaded. Review thumbnails, then send to Hermes OCR.`
+          ? `تم رفع أول ${files.length} صورة. ابدأ دفعة جديدة للصور المتبقية.`
+          : `تم رفع ${files.length} صورة. راجع المصغّرات ثم أرسلها لاستخراج البيانات.`
       );
     } catch (error) {
       setMessage(
         error instanceof Error
-          ? `${currentProgress} failed: ${error.message}`
-          : 'Bulk upload failed'
+          ? `${currentProgress} فشل: ${error.message}`
+          : 'فشل الرفع الجماعي'
       );
     } finally {
       event.target.value = '';
@@ -192,15 +205,15 @@ export default function CapturePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error || 'Could not send session');
+        setMessage(data.error || 'تعذّر إرسال الجلسة');
         setStatus('idle');
         return;
       }
 
-      setMessage(`${data.orderCount} orders sent to ${data.extraction.provider} for review.`);
+      setMessage(`تم إرسال ${data.orderCount} صورة إلى الذكاء الاصطناعي وجاري استخراج البيانات.`);
       setStatus('sent');
     } catch {
-      setMessage('Could not send session');
+      setMessage('تعذّر إرسال الجلسة');
       setStatus('idle');
     }
   };
@@ -220,11 +233,11 @@ export default function CapturePage() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <div>
-            <p className="text-sm font-semibold text-[#F27321]">Phone flow</p>
-            <h1 className="text-xl font-bold text-[#17365F]">Capture receipts</h1>
+            <p className="text-sm font-semibold text-[#F27321]">تدفّق الهاتف</p>
+            <h1 className="text-xl font-bold text-[#17365F]">تصوير الإيصالات</h1>
           </div>
           <Link className="text-sm font-medium text-[#17365F]" href="/">
-            Home
+            الرئيسية
           </Link>
         </div>
       </header>
@@ -233,7 +246,7 @@ export default function CapturePage() {
         {!sessionId && (
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <label className="block">
-              <span className="text-sm font-semibold text-slate-700">Search merchant</span>
+              <span className="text-sm font-semibold text-slate-700">البحث عن التاجر</span>
               <div className="mt-2 flex gap-2">
                 <input
                   className="h-11 min-w-0 flex-1 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
@@ -242,7 +255,7 @@ export default function CapturePage() {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') searchMerchants();
                   }}
-                  placeholder="Merchant name, phone, or ID"
+                  placeholder="اسم التاجر أو الهاتف أو الرقم"
                 />
                 <button
                   className="idv-button h-11 text-sm"
@@ -250,7 +263,7 @@ export default function CapturePage() {
                   onClick={searchMerchants}
                   type="button"
                 >
-                  {status === 'searching' ? 'Searching' : 'Search'}
+                  {status === 'searching' ? 'جاري البحث' : 'بحث'}
                 </button>
               </div>
             </label>
@@ -277,7 +290,7 @@ export default function CapturePage() {
 
             {hasSearched && status !== 'searching' && merchants.length === 0 && (
               <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
-                No merchants found. Try searching by merchant ID, phone number, or part of the name.
+                لا توجد نتائج. جرّب البحث برقم التاجر أو الهاتف أو جزء من الاسم.
               </p>
             )}
           </div>
@@ -286,17 +299,17 @@ export default function CapturePage() {
         {sessionId && selectedMerchant && (
           <div className="space-y-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-sm font-semibold text-slate-500">Active session</p>
+              <p className="text-sm font-semibold text-slate-500">الجلسة الحالية</p>
               <h2 className="mt-1 text-lg font-bold text-[#17365F]">{selectedMerchant.name}</h2>
-              <p className="mt-1 text-xs text-slate-500">Session {sessionId}</p>
+              <p className="mt-1 text-xs text-slate-500">الجلسة {sessionId}</p>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-md bg-slate-50 p-3">
-                  <p className="text-xs font-medium text-slate-500">Orders</p>
+                  <p className="text-xs font-medium text-slate-500">الطلبات</p>
                   <p className="text-3xl font-bold text-[#17365F]">{photos.length}</p>
                 </div>
                 <div className="rounded-md bg-slate-50 p-3">
-                  <p className="text-xs font-medium text-slate-500">Status</p>
-                  <p className="text-lg font-bold capitalize text-[#17365F]">{status}</p>
+                  <p className="text-xs font-medium text-slate-500">الحالة</p>
+                  <p className="text-lg font-bold text-[#17365F]">{statusLabel(status)}</p>
                 </div>
               </div>
             </div>
@@ -310,7 +323,7 @@ export default function CapturePage() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      alt={`Receipt ${photo.sequence}`}
+                      alt={`إيصال ${photo.sequence}`}
                       className="h-full w-full object-cover"
                       src={photo.previewUrl}
                     />
@@ -345,7 +358,7 @@ export default function CapturePage() {
                     onClick={() => cameraInputRef.current?.click()}
                     type="button"
                   >
-                    {status === 'capturing' ? 'Uploading...' : 'Capture receipt'}
+                    {status === 'capturing' ? 'جاري الرفع...' : 'تصوير إيصال'}
                   </button>
 
                   <button
@@ -354,7 +367,7 @@ export default function CapturePage() {
                     onClick={() => bulkInputRef.current?.click()}
                     type="button"
                   >
-                    Bulk upload (max. 20 photos)
+                    رفع جماعي (حد أقصى 20 صورة)
                   </button>
                 </div>
 
@@ -370,7 +383,7 @@ export default function CapturePage() {
                   onClick={sendSession}
                   type="button"
                 >
-                  {status === 'sending' ? 'Sending...' : `Send ${photos.length} orders`}
+                  {status === 'sending' ? 'جاري الإرسال...' : `إرسال ${photos.length} طلب`}
                 </button>
               </div>
             ) : (
@@ -379,14 +392,14 @@ export default function CapturePage() {
                   className="idv-button h-12 text-sm"
                   href={sessionId ? `/review?session=${encodeURIComponent(sessionId)}` : '/review'}
                 >
-                  Open review queue
+                  فتح قائمة المراجعة
                 </Link>
                 <button
                   className="idv-button idv-button-light h-12 text-sm"
                   onClick={resetSession}
                   type="button"
                 >
-                  Start another session
+                  بدء جلسة جديدة
                 </button>
               </div>
             )}

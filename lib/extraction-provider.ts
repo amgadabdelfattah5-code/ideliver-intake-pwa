@@ -3,6 +3,7 @@ import { OrderStatus, Prisma, SessionStatus } from '@prisma/client';
 import { extractWithHermesOcr } from '@/lib/hermes-ocr-client';
 import { isKnownEgyptGovernorate } from '@/lib/egypt-governorates';
 import { loadPhotoDataUrl } from '@/lib/photo-storage';
+import { notifyOcrComplete } from '@/lib/whatsapp-notify';
 import { prisma } from '@/lib/prisma';
 import type { ExtractionOrderInput, ExtractionResult } from '@/lib/extraction-types';
 
@@ -154,6 +155,7 @@ export async function runSessionExtraction(sessionId: string): Promise<{
   }
 
   let provider = shouldUseStub() ? 'stub' : 'ideliver-ocr-hermes';
+  let needsReviewCount = 0;
 
   for (const order of session.orders) {
     const imageDataUrl = await loadPhotoDataUrl(order.id, order.photoUrl);
@@ -173,6 +175,9 @@ export async function runSessionExtraction(sessionId: string): Promise<{
 
     provider = result.provider;
     const validationFlags = validateExtractedFields(result.fields);
+    if (validationFlags.some((flag) => flag.severity === 'error')) {
+      needsReviewCount += 1;
+    }
     const validationFlagJson = validationFlags.map((flag) => ({
       field: flag.field,
       message: flag.message,
@@ -214,6 +219,13 @@ export async function runSessionExtraction(sessionId: string): Promise<{
   await prisma.session.update({
     where: { id: sessionId },
     data: { status: SessionStatus.ready_for_review },
+  });
+
+  // Fire once per completed session — reviewer learns OCR is done.
+  await notifyOcrComplete({
+    merchantName: session.merchant.name,
+    total: session.orders.length,
+    failed: needsReviewCount,
   });
 
   return { provider, ordersProcessed: session.orders.length };
