@@ -366,6 +366,7 @@ export default function ReviewPage() {
                         className={`mt-1 h-10 w-full rounded-md border px-3 text-base font-medium text-[#17365F] outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20 ${
                           needsAttention ? 'border-amber-300 bg-amber-50' : 'border-slate-300'
                         }`}
+                        placeholder={key === 'recipientGovernorate' ? 'Type to search governorate' : undefined}
                         value={draft[key] || ''}
                         inputMode={key === 'recipientPhone' ? 'numeric' : undefined}
                         maxLength={key === 'recipientPhone' ? 11 : undefined}
