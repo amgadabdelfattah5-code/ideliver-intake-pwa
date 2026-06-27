@@ -39,10 +39,12 @@ export default function CapturePage() {
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [status, setStatus] = useState<CaptureStatus>('idle');
   const [message, setMessage] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const searchMerchants = async () => {
     setMessage('');
+    setHasSearched(false);
     setStatus('searching');
 
     try {
@@ -55,6 +57,7 @@ export default function CapturePage() {
       }
 
       setMerchants(data.merchants || []);
+      setHasSearched(true);
     } finally {
       setStatus('idle');
     }
@@ -81,6 +84,7 @@ export default function CapturePage() {
       setSessionId(data.session.id);
       setPhotos([]);
       setMerchants([]);
+      setHasSearched(false);
       setQuery(merchant.name);
     } finally {
       setStatus('idle');
@@ -216,6 +220,12 @@ export default function CapturePage() {
                   </button>
                 ))}
               </div>
+            )}
+
+            {hasSearched && status !== 'searching' && merchants.length === 0 && (
+              <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+                No merchants found. Try searching by merchant ID, phone number, or part of the name.
+              </p>
             )}
           </div>
         )}
