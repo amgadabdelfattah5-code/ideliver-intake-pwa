@@ -245,9 +245,8 @@ export default function ReviewPage() {
   return (
     <main className="min-h-screen bg-[#f6f8fb]">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2">
           <div>
-            <p className="text-sm font-semibold text-[#F27321]">Laptop flow</p>
             <h1 className="text-xl font-bold text-[#17365F]">Review queue</h1>
           </div>
           <Link className="text-sm font-medium text-[#17365F]" href="/">
@@ -256,7 +255,7 @@ export default function ReviewPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 py-5">
+      <section className="mx-auto max-w-6xl px-4 py-2">
         {!selectedSession ? (
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
             {queue.length === 0 ? (
@@ -292,9 +291,9 @@ export default function ReviewPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="space-y-2">
+            <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+              <div className="mb-2 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-bold text-[#17365F]">
                     {selectedSession.merchant.name}
@@ -304,7 +303,7 @@ export default function ReviewPage() {
                   </p>
                 </div>
                 <button
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700"
                   onClick={() => setSelectedSession(null)}
                   type="button"
                 >
@@ -317,7 +316,7 @@ export default function ReviewPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     alt="Receipt"
-                    className="max-h-[76vh] min-h-[520px] w-full bg-slate-950 object-contain"
+                    className="max-h-[62vh] min-h-[420px] w-full bg-slate-950 object-contain"
                     src={order.photoUrl}
                   />
                 </div>
@@ -329,8 +328,8 @@ export default function ReviewPage() {
             </div>
 
             {order && (
-              <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="grid gap-3 md:grid-cols-[repeat(25,minmax(0,1fr))]">
+              <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="grid gap-2 md:grid-cols-[repeat(25,minmax(0,1fr))]">
                   {reviewFields.map(([key, label]) => {
                     const fieldConfidence = confidenceForField(order.aiFields, key);
                     const validationFlag = validationFlagsFromFields(order.aiFields).find(
@@ -353,7 +352,7 @@ export default function ReviewPage() {
                         )}
                       </span>
                       <input
-                        className={`mt-1 h-11 w-full rounded-md border px-3 text-base font-medium text-[#17365F] outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20 ${
+                        className={`mt-1 h-10 w-full rounded-md border px-3 text-base font-medium text-[#17365F] outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20 ${
                           needsAttention ? 'border-amber-300 bg-amber-50' : 'border-slate-300'
                         }`}
                         value={draft[key] || ''}
@@ -387,9 +386,9 @@ export default function ReviewPage() {
                   })}
                 </div>
 
-                <div className="mt-5">
+                <div className="mt-3">
                   <button
-                    className="h-12 rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white hover:bg-[#102947]"
+                    className="h-11 w-full rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white hover:bg-[#102947]"
                     onClick={submitOrder}
                     type="button"
                   >
