@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
+import { egyptGovernorates, normalizeEgyptGovernorate } from '@/lib/egypt-governorates';
+
 type AiFields = Record<string, unknown>;
 interface ValidationFlag {
   field: string;
@@ -59,6 +61,7 @@ function fieldsToDraft(fields: AiFields | null): Record<string, string> {
     draft[key] = value == null ? '' : String(value);
   }
 
+  draft.recipientGovernorate = normalizeEgyptGovernorate(draft.recipientGovernorate);
   draft.total = calculateTotal(draft.price, draft.shippingFeePrinted);
 
   return draft;
@@ -359,6 +362,7 @@ export default function ReviewPage() {
                         )}
                       </span>
                       <input
+                        list={key === 'recipientGovernorate' ? 'egypt-governorates' : undefined}
                         className={`mt-1 h-10 w-full rounded-md border px-3 text-base font-medium text-[#17365F] outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20 ${
                           needsAttention ? 'border-amber-300 bg-amber-50' : 'border-slate-300'
                         }`}
@@ -375,6 +379,8 @@ export default function ReviewPage() {
                               ? event.target.value.replace(/\D/g, '').slice(0, 11)
                               : key === 'price' || key === 'shippingFeePrinted'
                                 ? formatMoneyInput(event.target.value)
+                              : key === 'recipientGovernorate'
+                                ? normalizeEgyptGovernorate(event.target.value)
                               : event.target.value;
 
                           setDraft((current) => {
@@ -388,6 +394,13 @@ export default function ReviewPage() {
                           });
                         }}
                       />
+                      {key === 'recipientGovernorate' && (
+                        <datalist id="egypt-governorates">
+                          {egyptGovernorates.map((governorate) => (
+                            <option key={governorate} value={governorate} />
+                          ))}
+                        </datalist>
+                      )}
                     </label>
                     );
                   })}

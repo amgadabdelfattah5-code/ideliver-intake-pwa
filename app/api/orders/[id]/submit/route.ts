@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { OrderStatus, SessionStatus } from '@prisma/client';
 
 import { requireRole } from '@/lib/auth';
+import { isKnownEgyptGovernorate, normalizeEgyptGovernorate } from '@/lib/egypt-governorates';
 import { prisma } from '@/lib/prisma';
 import { getLiquidShipBase } from '@/lib/wp-client';
 
@@ -50,7 +51,11 @@ function validateShipmentFields(fields: FieldMap): string[] {
     errors.push('Recipient phone must be an Egyptian mobile number like 01012345678.');
   }
   if (!fields.recipientAddress) errors.push('Recipient address is required.');
-  if (!fields.recipientGovernorate) errors.push('Recipient governorate is required.');
+  if (!fields.recipientGovernorate) {
+    errors.push('Recipient governorate is required.');
+  } else if (!isKnownEgyptGovernorate(fields.recipientGovernorate)) {
+    errors.push('Recipient governorate must be selected from the iDeliver governorate list.');
+  }
   if (!fields.product) errors.push('Product is required.');
   if (money(fields.COD) <= 0) errors.push('COD must be greater than zero.');
 
@@ -96,6 +101,8 @@ export async function POST(
       ...aiFields,
       ...fieldsToMap(correctedFields),
     };
+    fields.recipientGovernorate = normalizeEgyptGovernorate(fields.recipientGovernorate);
+
     const validationErrors = validateShipmentFields(fields);
 
     if (validationErrors.length > 0) {

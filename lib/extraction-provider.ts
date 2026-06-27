@@ -1,6 +1,7 @@
 import { OrderStatus, Prisma, SessionStatus } from '@prisma/client';
 
 import { extractWithHermesOcr } from '@/lib/hermes-ocr-client';
+import { isKnownEgyptGovernorate } from '@/lib/egypt-governorates';
 import { loadPhotoDataUrl } from '@/lib/photo-storage';
 import { prisma } from '@/lib/prisma';
 import type { ExtractionOrderInput, ExtractionResult } from '@/lib/extraction-types';
@@ -19,36 +20,6 @@ const requiredFields = [
   ['product', 'Product is missing.'],
   ['COD', 'COD is missing.'],
 ] as const;
-
-const egyptGovernorates = new Set([
-  'alexandria',
-  'aswan',
-  'asyut',
-  'beheira',
-  'beni suef',
-  'cairo',
-  'dakahlia',
-  'damietta',
-  'faiyum',
-  'gharbia',
-  'giza',
-  'ismailia',
-  'kafr el sheikh',
-  'luxor',
-  'matrouh',
-  'minya',
-  'monufia',
-  'new valley',
-  'north sinai',
-  'port said',
-  'qalyubia',
-  'qena',
-  'red sea',
-  'sharqia',
-  'sohag',
-  'south sinai',
-  'suez',
-]);
 
 function valueAsText(value: unknown): string {
   if (value == null) return '';
@@ -78,8 +49,8 @@ function validateExtractedFields(fields: ExtractionResult['fields']): Validation
     });
   }
 
-  const governorate = valueAsText(fields.recipientGovernorate).toLowerCase();
-  if (governorate && !egyptGovernorates.has(governorate)) {
+  const governorate = valueAsText(fields.recipientGovernorate);
+  if (governorate && !isKnownEgyptGovernorate(governorate)) {
     flags.push({
       field: 'recipientGovernorate',
       message: 'Governorate should be reviewed against the iDeliver governorate list.',
