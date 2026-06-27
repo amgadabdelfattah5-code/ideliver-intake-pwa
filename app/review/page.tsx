@@ -42,10 +42,12 @@ interface ReviewSession {
 const reviewFields = [
   ['recipientName', 'Recipient name'],
   ['recipientAddress', 'Address'],
-  ['recipientPhone', 'Phone'],
   ['recipientGovernorate', 'Governorate'],
+  ['recipientPhone', 'Phone'],
   ['product', 'Product'],
   ['price', 'Price'],
+  ['shippingFeePrinted', 'Shipping fees'],
+  ['total', 'Total'],
   ['notes', 'Notes'],
 ];
 
@@ -53,11 +55,26 @@ function fieldsToDraft(fields: AiFields | null): Record<string, string> {
   const draft: Record<string, string> = {};
 
   for (const [key] of reviewFields) {
-    const value = key === 'price' ? fields?.shippingFeePrinted ?? fields?.price : fields?.[key];
+    const value = key === 'total' ? fields?.COD : fields?.[key];
     draft[key] = value == null ? '' : String(value);
   }
 
+  draft.total = calculateTotal(draft.price, draft.shippingFeePrinted);
+
   return draft;
+}
+
+function moneyValue(value: string | undefined): number {
+  const normalized = Number((value || '').replace(/[^\d.]/g, ''));
+  return Number.isFinite(normalized) ? normalized : 0;
+}
+
+function formatMoneyValue(value: number): string {
+  return value > 0 ? String(value) : '';
+}
+
+function calculateTotal(price: string | undefined, shippingFee: string | undefined): string {
+  return formatMoneyValue(moneyValue(price) + moneyValue(shippingFee));
 }
 
 function hiddenDraftValue(order: ReviewOrder, key: string): string {
@@ -109,9 +126,12 @@ function reviewFieldClass(key: string): string {
     case 'recipientPhone':
     case 'recipientGovernorate':
     case 'product':
+    case 'price':
+    case 'shippingFeePrinted':
+    case 'total':
       return 'block md:col-span-2';
     case 'recipientAddress':
-      return 'block md:col-span-10';
+      return 'block md:col-span-8';
     case 'notes':
       return 'block md:col-span-12';
     default:
@@ -184,8 +204,8 @@ export default function ReviewPage() {
     const correctedFields = {
       ...draft,
       recipientCity: hiddenDraftValue(order, 'recipientCity'),
-      COD: hiddenDraftValue(order, 'COD'),
-      shippingFeePrinted: draft.price || hiddenDraftValue(order, 'shippingFeePrinted'),
+      COD: draft.total || hiddenDraftValue(order, 'COD'),
+      shippingFeePrinted: draft.shippingFeePrinted || hiddenDraftValue(order, 'shippingFeePrinted'),
     };
 
     setMessage('');
@@ -358,13 +378,24 @@ export default function ReviewPage() {
                         inputMode={key === 'recipientPhone' ? 'numeric' : undefined}
                         maxLength={key === 'recipientPhone' ? 11 : undefined}
                         pattern={key === 'recipientPhone' ? '01[0-9]{9}' : undefined}
+                        readOnly={key === 'total'}
                         onChange={(event) => {
+                          if (key === 'total') return;
+
                           const value =
                             key === 'recipientPhone'
                               ? event.target.value.replace(/\D/g, '').slice(0, 11)
                               : event.target.value;
 
-                          setDraft((current) => ({ ...current, [key]: value }));
+                          setDraft((current) => {
+                            const next = { ...current, [key]: value };
+
+                            if (key === 'price' || key === 'shippingFeePrinted') {
+                              next.total = calculateTotal(next.price, next.shippingFeePrinted);
+                            }
+
+                            return next;
+                          });
                         }}
                       />
                     </label>
