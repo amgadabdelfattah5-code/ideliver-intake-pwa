@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { OrderStatus } from '@prisma/client';
 
 import { requireAuth } from '@/lib/auth';
+import { storePhoto } from '@/lib/photo-storage';
 import { prisma } from '@/lib/prisma';
 
 interface UploadedPhoto {
@@ -92,8 +93,6 @@ export async function POST(
 
   try {
     const photo = await readPhoto(req);
-    const base64 = photo.bytes.toString('base64');
-    const photoUrl = `data:${photo.contentType};base64,${base64}`;
 
     const updatedSession = await prisma.session.update({
       where: { id },
@@ -107,18 +106,27 @@ export async function POST(
       data: {
         sessionId: id,
         sequence: updatedSession.photoCount,
-        photoUrl,
+        photoUrl: '',
         status: OrderStatus.captured,
       },
+    });
+    const storedPhoto = await storePhoto({
+      orderId: newOrder.id,
+      bytes: photo.bytes,
+      contentType: photo.contentType,
+    });
+    const orderWithPhoto = await prisma.order.update({
+      where: { id: newOrder.id },
+      data: { photoUrl: storedPhoto.photoUrl },
     });
 
     return NextResponse.json({
       success: true,
       order: {
-        id: newOrder.id,
-        sequence: newOrder.sequence,
-        photoUrl,
-        status: newOrder.status,
+        id: orderWithPhoto.id,
+        sequence: orderWithPhoto.sequence,
+        photoUrl: orderWithPhoto.photoUrl,
+        status: orderWithPhoto.status,
       },
       sessionPhotoCount: updatedSession.photoCount,
     });

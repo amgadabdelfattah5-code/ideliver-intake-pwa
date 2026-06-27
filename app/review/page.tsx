@@ -4,6 +4,11 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 type AiFields = Record<string, unknown>;
+interface ValidationFlag {
+  field: string;
+  message: string;
+  severity: 'error' | 'warning';
+}
 
 interface QueueMerchant {
   wpUserId: number;
@@ -73,6 +78,25 @@ function warningsFromFields(fields: AiFields | null): string[] {
   return Array.isArray(warnings) ? warnings.map(String) : [];
 }
 
+function validationFlagsFromFields(fields: AiFields | null): ValidationFlag[] {
+  const flags = fields?.validationFlags;
+  if (!Array.isArray(flags)) return [];
+
+  return flags
+    .map((flag) => {
+      if (!flag || typeof flag !== 'object' || Array.isArray(flag)) return null;
+      const item = flag as Record<string, unknown>;
+      const severity = item.severity === 'error' ? 'error' : 'warning';
+
+      return {
+        field: String(item.field || ''),
+        message: String(item.message || ''),
+        severity,
+      };
+    })
+    .filter((flag): flag is ValidationFlag => Boolean(flag?.field && flag.message));
+}
+
 function formatErrorDetails(details: unknown): string {
   if (Array.isArray(details)) return details.join(' ');
   if (typeof details === 'string') return details;
@@ -114,7 +138,9 @@ export default function ReviewPage() {
     }
 
     const session = data.session as ReviewSession;
-    const openOrders = session.orders.filter((item) => item.status !== 'submitted');
+    const openOrders = session.orders.filter(
+      (item) => item.status !== 'submitted' && item.status !== 'awaiting_merchant'
+    );
     const nextIndex = Math.min(preferredIndex, Math.max(openOrders.length - 1, 0));
 
     setSelectedSession(session);
@@ -289,20 +315,33 @@ export default function ReviewPage() {
                       ))}
                     </div>
                   )}
+                  {validationFlagsFromFields(order.aiFields).length > 0 && (
+                    <div className="mt-3 space-y-1 rounded-md border border-red-200 bg-red-50 px-3 py-2">
+                      {validationFlagsFromFields(order.aiFields).map((flag) => (
+                        <p className="text-xs font-semibold text-red-800" key={`${flag.field}-${flag.message}`}>
+                          {flag.message}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3">
                   {reviewFields.map(([key, label]) => {
                     const fieldConfidence = confidenceForField(order.aiFields, key);
-                    const needsAttention = fieldConfidence != null && fieldConfidence < 0.75;
+                    const validationFlag = validationFlagsFromFields(order.aiFields).find(
+                      (flag) => flag.field === key
+                    );
+                    const needsAttention =
+                      Boolean(validationFlag) || (fieldConfidence != null && fieldConfidence < 0.75);
 
                     return (
                     <label className="block" key={key}>
                       <span className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">
                         <span>{label}</span>
-                        {fieldConfidence != null && (
+                        {(fieldConfidence != null || validationFlag) && (
                           <span className={needsAttention ? 'text-amber-700' : 'text-slate-400'}>
-                            {Math.round(fieldConfidence * 100)}%
+                            {validationFlag ? validationFlag.severity : `${Math.round(fieldConfidence! * 100)}%`}
                           </span>
                         )}
                       </span>

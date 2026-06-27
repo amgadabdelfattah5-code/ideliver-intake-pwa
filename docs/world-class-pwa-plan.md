@@ -40,7 +40,7 @@ Each phase must have a demoable gate before the next phase starts.
 
 ### 2. Replace Temporary Photo Storage Before Real Testing
 
-Base64 data URLs are acceptable only for early scaffolding. Before serious end-to-end testing, photos must be stored as files on a mounted volume or object storage and served through an authenticated route.
+Base64 data URLs are acceptable only for early scaffolding. The app now has a storage abstraction controlled by `PHOTO_STORAGE_MODE`: `data-url` preserves the current foundation behavior, while `file` stores photos under `PHOTO_STORAGE_DIR` and serves them through authenticated `/api/photos/:id`. Before serious production volume, mount a persistent EasyPanel volume or replace this with object storage and flip the mode.
 
 ### 3. Verify External Contracts Before UI Polish
 
