@@ -354,7 +354,7 @@ export default function CapturePage() {
                     onClick={() => bulkInputRef.current?.click()}
                     type="button"
                   >
-                    Bulk upload
+                    Bulk upload (max. 20 photos)
                   </button>
                 </div>
 
