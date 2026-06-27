@@ -142,7 +142,7 @@ export default function Home() {
             )}
 
             <button
-              className="h-12 w-full rounded-md bg-[#F27321] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#d96318] disabled:cursor-not-allowed disabled:opacity-60"
+              className="idv-button idv-button-orange h-12 w-full text-sm"
               disabled={submitting || !username || !password}
               type="submit"
             >
@@ -170,7 +170,7 @@ export default function Home() {
             <h1 className="text-xl font-bold text-[#17365F]">Intake workspace</h1>
           </div>
           <button
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="idv-button idv-button-light idv-button-small text-sm"
             onClick={handleLogout}
             type="button"
           >
@@ -189,7 +189,7 @@ export default function Home() {
               session into extraction.
             </p>
             <Link
-              className="mt-5 inline-flex h-10 items-center rounded-md bg-[#F27321] px-4 text-sm font-semibold text-white hover:bg-[#d96318]"
+              className="idv-button idv-button-orange mt-5 h-10 text-sm"
               href="/capture"
             >
               Open capture
@@ -206,7 +206,7 @@ export default function Home() {
               submit shipments.
             </p>
             <Link
-              className="mt-5 inline-flex h-10 items-center rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white hover:bg-[#102947]"
+              className="idv-button mt-5 h-10 text-sm"
               href="/review"
             >
               Open review

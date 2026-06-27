@@ -305,7 +305,7 @@ export default function ReviewPage() {
                     <div className="mt-3 grid gap-2">
                       {merchant.sessions.map((session) => (
                         <button
-                          className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-3 text-left hover:bg-slate-50"
+                          className="idv-button idv-button-light flex w-full items-center justify-between rounded-md px-3 py-3 text-left"
                           key={session.id}
                           onClick={() => loadSession(session.id)}
                           type="button"
@@ -340,7 +340,7 @@ export default function ReviewPage() {
                   </p>
                 </div>
                 <button
-                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700"
+                  className="idv-button idv-button-light idv-button-small text-sm"
                   onClick={() => setSelectedSession(null)}
                   type="button"
                 >
@@ -352,21 +352,21 @@ export default function ReviewPage() {
                 <div className="relative overflow-hidden rounded-md border border-slate-200 bg-slate-950">
                   <div className="absolute right-2 top-2 z-10 flex gap-1">
                     <button
-                      className="h-8 rounded bg-white/90 px-3 text-sm font-bold text-[#17365F]"
+                      className="idv-button idv-button-light idv-button-small h-8 min-w-8 px-3 text-sm"
                       onClick={() => changeImageZoom(0.25)}
                       type="button"
                     >
                       +
                     </button>
                     <button
-                      className="h-8 rounded bg-white/90 px-3 text-sm font-bold text-[#17365F]"
+                      className="idv-button idv-button-light idv-button-small h-8 min-w-8 px-3 text-sm"
                       onClick={() => changeImageZoom(-0.25)}
                       type="button"
                     >
                       -
                     </button>
                     <button
-                      className="h-8 rounded bg-white/90 px-3 text-xs font-bold text-[#17365F]"
+                      className="idv-button idv-button-light idv-button-small h-8 px-3 text-xs"
                       onClick={resetImageView}
                       type="button"
                     >
@@ -505,7 +505,7 @@ export default function ReviewPage() {
 
                 <div className="mt-3">
                   <button
-                    className="h-11 w-full rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white hover:bg-[#102947]"
+                    className="idv-button h-11 w-full text-sm"
                     onClick={submitOrder}
                     type="button"
                   >

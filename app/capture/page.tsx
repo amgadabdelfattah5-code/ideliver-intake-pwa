@@ -245,7 +245,7 @@ export default function CapturePage() {
                   placeholder="Merchant name, phone, or ID"
                 />
                 <button
-                  className="h-11 rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white disabled:opacity-60"
+                  className="idv-button h-11 text-sm"
                   disabled={status === 'searching'}
                   onClick={searchMerchants}
                   type="button"
@@ -259,7 +259,7 @@ export default function CapturePage() {
               <div className="mt-4 divide-y divide-slate-100 rounded-md border border-slate-200">
                 {merchants.map((merchant) => (
                   <button
-                    className="block w-full px-3 py-3 text-left hover:bg-slate-50"
+                    className="idv-button idv-button-light my-2 w-full justify-start rounded-md px-3 py-3 text-left"
                     key={merchant.id}
                     onClick={() => createSession(merchant)}
                     type="button"
@@ -340,7 +340,7 @@ export default function CapturePage() {
               <div className="grid gap-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <button
-                    className="h-12 rounded-md bg-[#F27321] px-4 text-sm font-semibold text-white disabled:opacity-60"
+                    className="idv-button idv-button-orange h-12 text-sm"
                     disabled={status === 'capturing' || status === 'sending'}
                     onClick={() => cameraInputRef.current?.click()}
                     type="button"
@@ -349,7 +349,7 @@ export default function CapturePage() {
                   </button>
 
                   <button
-                    className="h-12 rounded-md border border-[#17365F] bg-white px-4 text-sm font-semibold text-[#17365F] disabled:opacity-60"
+                    className="idv-button idv-button-light h-12 text-sm"
                     disabled={status === 'capturing' || status === 'sending'}
                     onClick={() => bulkInputRef.current?.click()}
                     type="button"
@@ -365,7 +365,7 @@ export default function CapturePage() {
                 )}
 
                 <button
-                  className="h-12 rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white disabled:opacity-60"
+                  className="idv-button h-12 text-sm"
                   disabled={photos.length === 0 || status === 'sending'}
                   onClick={sendSession}
                   type="button"
@@ -376,13 +376,13 @@ export default function CapturePage() {
             ) : (
               <div className="grid gap-3">
                 <Link
-                  className="flex h-12 items-center justify-center rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white"
+                  className="idv-button h-12 text-sm"
                   href={sessionId ? `/review?session=${encodeURIComponent(sessionId)}` : '/review'}
                 >
                   Open review queue
                 </Link>
                 <button
-                  className="h-12 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700"
+                  className="idv-button idv-button-light h-12 text-sm"
                   onClick={resetSession}
                   type="button"
                 >
