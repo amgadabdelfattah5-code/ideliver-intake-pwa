@@ -68,21 +68,52 @@ export default function Home() {
 
   if (!user) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-4 py-10">
-        <section className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-6">
-            <p className="text-sm font-semibold text-[#F27321]">iDeliver Egypt</p>
-            <h1 className="mt-2 text-2xl font-bold text-[#17365F]">Intake workspace</h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Sign in to capture pickup receipts and review extracted orders.
-            </p>
+      <main className="min-h-screen bg-[#f5f7fa] text-[#17365F]">
+        <section className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:px-6">
+          <div className="hidden lg:block">
+            <div className="max-w-xl">
+              <div className="inline-flex rounded-md border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt="iDeliver"
+                  className="h-20 w-auto"
+                  src="/ideliver-logo.svg"
+                />
+              </div>
+              <p className="mt-8 text-sm font-bold uppercase text-[#F27321]">
+                iDeliver Egypt
+              </p>
+              <h1 className="mt-3 max-w-lg text-4xl font-bold leading-tight text-[#17365F]">
+                AI intake workspace for receipt capture and shipment review
+              </h1>
+              <p className="mt-4 max-w-md text-base leading-7 text-slate-600">
+                Staff sign in here before capturing merchant pickup receipts, sending photos to Hermes OCR, and reviewing extracted shipment data.
+              </p>
+            </div>
           </div>
+
+          <section className="w-full rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-28 items-center justify-center rounded-md border border-slate-200 bg-white p-2 shadow-sm">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img alt="iDeliver" className="max-h-12 w-auto" src="/ideliver-logo.svg" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#F27321]">iDeliver Egypt</p>
+                  <h1 className="mt-1 text-2xl font-bold text-[#17365F]">Intake login</h1>
+                </div>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-slate-600">
+                Use your WordPress account and app password to access the internal PWA.
+              </p>
+            </div>
 
           <form className="space-y-4" onSubmit={handleLogin}>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">WordPress user</span>
+              <span className="text-sm font-semibold text-[#17365F]">WordPress user</span>
               <input
-                className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+                className="mt-1 h-12 w-full rounded-md border border-slate-300 bg-white px-3 text-base font-medium text-[#17365F] shadow-sm outline-none placeholder:text-slate-400 focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/25"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 placeholder="name@example.com"
@@ -91,26 +122,38 @@ export default function Home() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">App password</span>
+              <span className="text-sm font-semibold text-[#17365F]">App password</span>
               <input
-                className="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+                className="mt-1 h-12 w-full rounded-md border border-slate-300 bg-white px-3 text-base font-medium text-[#17365F] shadow-sm outline-none placeholder:text-slate-400 focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/25"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 type="password"
                 autoComplete="current-password"
+                placeholder="WordPress app password"
               />
             </label>
 
-            {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+            {error && (
+              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                {error}
+              </p>
+            )}
 
             <button
-              className="h-11 w-full rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white transition hover:bg-[#102947] disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-12 w-full rounded-md bg-[#F27321] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#d96318] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={submitting || !username || !password}
               type="submit"
             >
               {submitting ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
+
+            <div className="mt-5 border-t border-slate-100 pt-4">
+              <p className="text-xs font-medium leading-5 text-slate-500">
+                Protected staff workspace for capture, OCR review, and shipment submission.
+              </p>
+            </div>
+        </section>
         </section>
       </main>
     );
