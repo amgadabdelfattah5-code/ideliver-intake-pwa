@@ -80,6 +80,10 @@ function calculateTotal(price: string | undefined, shippingFee: string | undefin
   return formatMoneyValue(moneyValue(price) + moneyValue(shippingFee));
 }
 
+function calculatePrice(total: string | undefined, shippingFee: string | undefined): string {
+  return formatMoneyValue(Math.max(moneyValue(total) - moneyValue(shippingFee), 0));
+}
+
 function formatMoneyInput(value: string): string {
   const digits = value.replace(/\D/g, '');
   return digits ? Number(digits).toLocaleString('en-US') : '';
@@ -161,6 +165,7 @@ export default function ReviewPage() {
   const [message, setMessage] = useState('');
   const [imageZoom, setImageZoom] = useState(1);
   const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
+  const [pricingMode, setPricingMode] = useState<'sum' | 'fromTotal'>('sum');
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
   const pendingOrders = useMemo(
@@ -211,6 +216,7 @@ export default function ReviewPage() {
     setSelectedSession(session);
     setCurrentOrderIndex(nextIndex);
     setDraft(fieldsToDraft(openOrders[nextIndex]?.correctedFields || openOrders[nextIndex]?.aiFields || null));
+    setPricingMode('sum');
     resetImageView();
   };
 
@@ -442,27 +448,43 @@ export default function ReviewPage() {
                         }`}
                         placeholder={key === 'recipientGovernorate' ? 'Type to search governorate' : undefined}
                         value={draft[key] || ''}
-                        inputMode={key === 'recipientPhone' ? 'numeric' : undefined}
+                        inputMode={
+                          key === 'recipientPhone' || key === 'price' || key === 'shippingFeePrinted' || key === 'total'
+                            ? 'numeric'
+                            : undefined
+                        }
                         maxLength={key === 'recipientPhone' ? 11 : undefined}
                         pattern={key === 'recipientPhone' ? '01[0-9]{9}' : undefined}
-                        readOnly={key === 'total'}
                         onChange={(event) => {
-                          if (key === 'total') return;
-
                           const value =
                             key === 'recipientPhone'
                               ? event.target.value.replace(/\D/g, '').slice(0, 11)
-                              : key === 'price' || key === 'shippingFeePrinted'
+                              : key === 'price' || key === 'shippingFeePrinted' || key === 'total'
                                 ? formatMoneyInput(event.target.value)
                               : key === 'recipientGovernorate'
                                 ? normalizeEgyptGovernorate(event.target.value)
                               : event.target.value;
 
+                          const nextPricingMode =
+                            key === 'total' ? 'fromTotal' : key === 'price' ? 'sum' : pricingMode;
+
+                          if (key === 'price' || key === 'total') {
+                            setPricingMode(nextPricingMode);
+                          }
+
                           setDraft((current) => {
                             const next = { ...current, [key]: value };
 
-                            if (key === 'price' || key === 'shippingFeePrinted') {
+                            if (key === 'price') {
                               next.total = calculateTotal(next.price, next.shippingFeePrinted);
+                            } else if (key === 'total') {
+                              next.price = calculatePrice(next.total, next.shippingFeePrinted);
+                            } else if (key === 'shippingFeePrinted') {
+                              if (nextPricingMode === 'fromTotal') {
+                                next.price = calculatePrice(next.total, next.shippingFeePrinted);
+                              } else {
+                                next.total = calculateTotal(next.price, next.shippingFeePrinted);
+                              }
                             }
 
                             return next;
