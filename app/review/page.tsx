@@ -133,14 +133,13 @@ function reviewFieldClass(key: string): string {
     case 'product':
       return 'block md:col-span-4';
     case 'price':
-      return 'block md:col-span-3 md:col-start-1';
     case 'shippingFeePrinted':
     case 'total':
       return 'block md:col-span-3';
     case 'recipientAddress':
       return 'block md:col-span-17';
     case 'notes':
-      return 'block md:col-span-16';
+      return 'block md:col-span-8';
     default:
       return 'block md:col-span-4';
   }
