@@ -267,9 +267,9 @@ export default function ReviewPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="space-y-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-bold text-[#17365F]">
                     {selectedSession.merchant.name}
@@ -288,9 +288,13 @@ export default function ReviewPage() {
               </div>
 
               {order ? (
-                <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-950">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img alt="Receipt" className="max-h-[70vh] w-full object-contain" src={order.photoUrl} />
+                  <img
+                    alt="Receipt"
+                    className="max-h-[76vh] min-h-[520px] w-full bg-slate-950 object-contain"
+                    src={order.photoUrl}
+                  />
                 </div>
               ) : (
                 <p className="rounded-md bg-slate-50 p-4 text-sm text-slate-600">
@@ -301,32 +305,36 @@ export default function ReviewPage() {
 
             {order && (
               <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="mb-4">
-                  <p className="text-xs font-semibold uppercase text-slate-500">AI confidence</p>
-                  <p className="mt-1 text-2xl font-bold text-[#17365F]">
-                    {order.confidence == null ? 'N/A' : `${Math.round(order.confidence * 100)}%`}
-                  </p>
-                  {warningsFromFields(order.aiFields).length > 0 && (
-                    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
-                      {warningsFromFields(order.aiFields).map((warning) => (
-                        <p className="text-xs font-semibold text-amber-800" key={warning}>
-                          {warning}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                  {validationFlagsFromFields(order.aiFields).length > 0 && (
-                    <div className="mt-3 space-y-1 rounded-md border border-red-200 bg-red-50 px-3 py-2">
-                      {validationFlagsFromFields(order.aiFields).map((flag) => (
-                        <p className="text-xs font-semibold text-red-800" key={`${flag.field}-${flag.message}`}>
-                          {flag.message}
-                        </p>
-                      ))}
-                    </div>
-                  )}
+                <div className="mb-5 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
+                  <div className="rounded-md bg-slate-50 p-3">
+                    <p className="text-xs font-semibold uppercase text-slate-500">AI confidence</p>
+                    <p className="mt-1 text-3xl font-bold text-[#17365F]">
+                      {order.confidence == null ? 'N/A' : `${Math.round(order.confidence * 100)}%`}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    {warningsFromFields(order.aiFields).length > 0 && (
+                      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+                        {warningsFromFields(order.aiFields).map((warning) => (
+                          <p className="text-xs font-semibold text-amber-800" key={warning}>
+                            {warning}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {validationFlagsFromFields(order.aiFields).length > 0 && (
+                      <div className="space-y-1 rounded-md border border-red-200 bg-red-50 px-3 py-2">
+                        {validationFlagsFromFields(order.aiFields).map((flag) => (
+                          <p className="text-xs font-semibold text-red-800" key={`${flag.field}-${flag.message}`}>
+                            {flag.message}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid gap-3 md:grid-cols-2">
                   {reviewFields.map(([key, label]) => {
                     const fieldConfidence = confidenceForField(order.aiFields, key);
                     const validationFlag = validationFlagsFromFields(order.aiFields).find(
@@ -336,7 +344,10 @@ export default function ReviewPage() {
                       Boolean(validationFlag) || (fieldConfidence != null && fieldConfidence < 0.75);
 
                     return (
-                    <label className="block" key={key}>
+                    <label
+                      className={key === 'recipientAddress' || key === 'notes' ? 'block md:col-span-2' : 'block'}
+                      key={key}
+                    >
                       <span className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">
                         <span>{label}</span>
                         {(fieldConfidence != null || validationFlag) && (
@@ -346,7 +357,7 @@ export default function ReviewPage() {
                         )}
                       </span>
                       <input
-                        className={`mt-1 h-10 w-full rounded-md border px-3 text-sm outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20 ${
+                        className={`mt-1 h-11 w-full rounded-md border px-3 text-base font-medium text-[#17365F] outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20 ${
                           needsAttention ? 'border-amber-300 bg-amber-50' : 'border-slate-300'
                         }`}
                         value={draft[key] || ''}
@@ -359,7 +370,7 @@ export default function ReviewPage() {
                   })}
                 </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <button
                     className="h-11 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 disabled:opacity-50"
                     disabled={currentOrderIndex === 0}
@@ -380,21 +391,23 @@ export default function ReviewPage() {
                   </button>
                 </div>
 
-                <button
-                  className="mt-3 h-12 w-full rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white hover:bg-[#102947]"
-                  onClick={submitOrder}
-                  type="button"
-                >
-                  Submit shipment
-                </button>
+                <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_260px]">
+                  <button
+                    className="h-12 rounded-md bg-[#17365F] px-4 text-sm font-semibold text-white hover:bg-[#102947]"
+                    onClick={submitOrder}
+                    type="button"
+                  >
+                    Submit shipment
+                  </button>
 
-                <button
-                  className="mt-3 h-11 w-full rounded-md border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-100"
-                  onClick={markAwaitingMerchant}
-                  type="button"
-                >
-                  Awaiting merchant reply
-                </button>
+                  <button
+                    className="h-12 rounded-md border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+                    onClick={markAwaitingMerchant}
+                    type="button"
+                  >
+                    Awaiting merchant reply
+                  </button>
+                </div>
               </div>
             )}
           </div>
