@@ -305,7 +305,7 @@ export default function ReviewPage() {
                     <div className="mt-3 grid gap-2">
                       {merchant.sessions.map((session) => (
                         <button
-                          className="idv-button idv-button-light flex w-full items-center justify-between rounded-md px-3 py-3 text-left"
+                          className="flex w-full items-center justify-between rounded-md border border-slate-200 px-3 py-3 text-left hover:bg-slate-50"
                           key={session.id}
                           onClick={() => loadSession(session.id)}
                           type="button"

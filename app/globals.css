@@ -35,8 +35,8 @@ input:-webkit-autofill:focus {
 .idv-button {
   --idv-bg: #17365f;
   --idv-fg: #ffffff;
-  --idv-glow: rgba(242, 115, 33, 0.35);
-  --idv-shine: rgba(255, 255, 255, 0.32);
+  --idv-glow: rgba(255, 255, 255, 0.2);
+  --idv-shine: rgba(255, 255, 255, 0.36);
   --idv-shadow: rgba(8, 28, 54, 0.42);
   align-items: center;
   background: var(--idv-bg);
@@ -104,14 +104,14 @@ input:-webkit-autofill:focus {
 
 .idv-button-orange {
   --idv-bg: #f27321;
-  --idv-glow: rgba(255, 255, 255, 0.28);
+  --idv-glow: rgba(255, 228, 206, 0.38);
   --idv-shadow: rgba(151, 64, 14, 0.45);
 }
 
 .idv-button-light {
   --idv-bg: #ffffff;
   --idv-fg: #17365f;
-  --idv-glow: rgba(242, 115, 33, 0.14);
+  --idv-glow: rgba(23, 54, 95, 0.08);
   --idv-shadow: rgba(23, 54, 95, 0.25);
   border: 1px solid rgba(23, 54, 95, 0.22);
 }
