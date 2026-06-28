@@ -1,6 +1,7 @@
 import { evolutionConfigured, sendEvolutionText } from '@/lib/evolution-whatsapp';
 
 const DEFAULT_RECIPIENTS = ['+201026000806', '+201003323669'];
+const DEFAULT_REVIEW_URL = 'https://n8n-mcp-intake-pwa.yawxsq.easypanel.host/review';
 
 export interface OcrCompletionPayload {
   merchantName: string;
@@ -17,31 +18,23 @@ function recipients(): string[] {
   return configured.split(',').map((item) => item.trim()).filter(Boolean);
 }
 
+function reviewUrl(): string {
+  const baseUrl = process.env.REVIEW_QUEUE_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (!baseUrl) return DEFAULT_REVIEW_URL;
+
+  return baseUrl.endsWith('/review') ? baseUrl : `${baseUrl.replace(/\/$/, '')}/review`;
+}
+
 export function buildOcrCompletionMessage({
   merchantName,
   total,
-  failed,
 }: OcrCompletionPayload): string {
-  const processed = total - failed;
-
-  if (failed > 0) {
-    return [
-      'تنبيه iDeliver',
-      '',
-      `تمت معالجة ${processed} من ${total} صورة للتاجر ${merchantName}.`,
-      `يوجد ${failed} إيصال يحتاج مراجعة.`,
-      '',
-      'برجاء الدخول إلى قائمة المراجعة لمراجعة البيانات وإرسال الشحنات.',
-    ].join('\n');
-  }
-
   return [
     'تنبيه iDeliver',
     '',
-    `تم الانتهاء من معالجة ${total} صورة للتاجر ${merchantName}.`,
+    `تمت معالجة ${total} صور للتاجر ${merchantName}.`,
     '',
-    'الصور جاهزة الآن في قائمة المراجعة.',
-    'برجاء مراجعة البيانات وإرسال الشحنات.',
+    `برجاء المراجعة من خلال هذا اللينك: ${reviewUrl()}`,
   ].join('\n');
 }
 
