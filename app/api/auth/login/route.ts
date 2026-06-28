@@ -39,8 +39,10 @@ export async function POST(req: Request) {
       });
     }
 
-    // Verify credentials against WordPress (app-password or user/pass)
-    const wpVerify = await fetch(`${getWpJsonBase()}/wp/v2/users/me`, {
+    // Verify credentials against WordPress (app-password or user/pass).
+    // context=edit so the response includes the user's actual WP roles —
+    // without it we'd have to trust every successful login as admin.
+    const wpVerify = await fetch(`${getWpJsonBase()}/wp/v2/users/me?context=edit`, {
       method: 'GET',
       headers: {
         'Authorization': `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`,
@@ -54,11 +56,13 @@ export async function POST(req: Request) {
     const wpUser = await wpVerify.json();
     const email = wpUser.email || username;
     const displayName = wpUser.name || wpUser.slug || username;
+    const wpRoles: string[] = Array.isArray(wpUser.roles) ? wpUser.roles : [];
+    const role = wpRoles.includes('administrator') ? 'admin' : 'data_entry';
     const token = createSessionToken({
       wpUserId: wpUser.id,
       username: displayName,
       email,
-      role: 'admin',
+      role,
       authProvider: 'wordpress',
     });
 
@@ -73,7 +77,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      user: { id: wpUser.id, username: displayName, email, role: 'admin' },
+      user: { id: wpUser.id, username: displayName, email, role },
     });
   } catch {
     return NextResponse.json({ error: 'فشل تسجيل الدخول' }, { status: 500 });

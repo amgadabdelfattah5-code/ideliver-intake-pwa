@@ -3,6 +3,13 @@ import path from 'path';
 
 const knownPhotoExtensions = ['png', 'jpg', 'webp', 'heic'] as const;
 
+// orderId is a Prisma cuid; reject anything else before it touches a file path.
+function assertSafeOrderId(orderId: string): void {
+  if (!/^[a-z0-9]+$/i.test(orderId)) {
+    throw new Error(`Invalid orderId: ${orderId}`);
+  }
+}
+
 export interface StoredPhoto {
   photoUrl: string;
   contentType: string;
@@ -41,6 +48,7 @@ function dataUrl(bytes: Buffer, contentType: string): string {
 // Never throws — missing files are expected in data-url mode or when nothing was stored.
 export async function deleteStoredPhoto(orderId: string): Promise<void> {
   if (storageMode() !== 'file') return;
+  assertSafeOrderId(orderId);
 
   const dir = storageDir();
   for (const extension of knownPhotoExtensions) {
@@ -60,6 +68,7 @@ export async function storePhoto(input: PhotoInput): Promise<StoredPhoto> {
     };
   }
 
+  assertSafeOrderId(input.orderId);
   const dir = storageDir();
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, fileName(input.orderId, input.contentType)), input.bytes);
@@ -73,6 +82,7 @@ export async function storePhoto(input: PhotoInput): Promise<StoredPhoto> {
 export async function loadPhotoDataUrl(orderId: string, photoUrl: string): Promise<string> {
   if (photoUrl.startsWith('data:')) return photoUrl;
   if (!photoUrl.startsWith('/api/photos/')) return photoUrl;
+  assertSafeOrderId(orderId);
 
   const dir = storageDir();
   const candidates = ['png', 'jpg', 'webp', 'heic'];
@@ -94,6 +104,7 @@ export async function readStoredPhoto(orderId: string): Promise<{
   bytes: Buffer;
   contentType: string;
 } | null> {
+  assertSafeOrderId(orderId);
   const dir = storageDir();
   const candidates = [
     ['png', 'image/png'],
