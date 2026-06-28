@@ -126,14 +126,14 @@ export default function CapturePage() {
     resetImageView();
   };
 
-  const deletePreviewPhoto = async () => {
-    if (previewIndex === null || deleting) return;
+  const deletePhotoAtIndex = async (index: number) => {
+    if (deleting) return;
     if (status === 'sent' || status === 'sending') {
       setMessage('لا يمكن حذف الصورة بعد إرسال الجلسة للذكاء الاصطناعي.');
       return;
     }
 
-    const photo = photos[previewIndex];
+    const photo = photos[index];
     if (!photo) return;
 
     if (!window.confirm('هل تريد حذف هذه الصورة وإعادة رفع صورة أوضح؟')) return;
@@ -154,11 +154,18 @@ export default function CapturePage() {
       const remaining = photos.filter((item) => item.orderId !== photo.orderId);
       setPhotos(remaining);
 
+      // adjust the open preview (if any) to the next/previous photo, or close it
+      setPreviewIndex((current) => {
+        if (current === null) return null;
+        if (remaining.length === 0) return null;
+        if (current < index) return current;
+        if (current === index) return Math.min(index, remaining.length - 1);
+        return current - 1;
+      });
+
       if (remaining.length === 0) {
-        setPreviewIndex(null);
         setMessage('تم حذف الصورة ولا توجد صور أخرى.');
       } else {
-        setPreviewIndex(Math.min(previewIndex, remaining.length - 1));
         resetImageView();
       }
     } catch {
@@ -429,11 +436,18 @@ export default function CapturePage() {
             {photos.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
                 {photos.map((photo, index) => (
-                  <button
-                    className="aspect-square overflow-hidden rounded-md border border-slate-200 bg-white p-0"
+                  <div
+                    className="relative aspect-square cursor-pointer overflow-hidden rounded-md border border-slate-200 bg-white"
                     key={photo.orderId}
                     onClick={() => openPreview(index)}
-                    type="button"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openPreview(index);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -441,7 +455,21 @@ export default function CapturePage() {
                       className="h-full w-full object-cover"
                       src={photo.previewUrl}
                     />
-                  </button>
+                    {status !== 'sent' && (
+                      <button
+                        aria-label="حذف الصورة"
+                        className="absolute right-1 top-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-sm font-bold leading-none text-white shadow-md disabled:opacity-50"
+                        disabled={deleting || status === 'sending'}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void deletePhotoAtIndex(index);
+                        }}
+                        type="button"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -522,7 +550,7 @@ export default function CapturePage() {
 
         {previewIndex !== null && photos[previewIndex] && (
           <div className="fixed inset-0 z-50 flex touch-none flex-col bg-black/95" role="dialog" aria-modal="true">
-            <div className="flex items-center justify-between gap-2 px-3 py-2">
+            <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
               <button
                 className="idv-button idv-button-light idv-button-small text-sm"
                 onClick={closePreview}
@@ -561,7 +589,7 @@ export default function CapturePage() {
               </div>
             </div>
 
-            <div className="relative flex flex-1 touch-none items-center justify-center overflow-hidden">
+            <div className="relative flex min-h-0 flex-1 touch-none items-center justify-center overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt={`إيصال ${photos[previewIndex].sequence}`}
@@ -656,11 +684,11 @@ export default function CapturePage() {
             </div>
 
             {status !== 'sent' && (
-              <div className="px-3 py-2">
+              <div className="shrink-0 bg-black/95 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                 <button
                   className="idv-button idv-button-light idv-button-small w-full text-sm [--idv-fg:#dc2626]"
                   disabled={deleting || status === 'sending'}
-                  onClick={deletePreviewPhoto}
+                  onClick={() => deletePhotoAtIndex(previewIndex)}
                   type="button"
                 >
                   {deleting ? 'جاري الحذف...' : 'حذف الصورة'}
