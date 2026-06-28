@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, useRef, useState } from 'react';
+import { ChangeEvent, useCallback, useRef, useState } from 'react';
 
 interface Merchant {
   id: string;
@@ -46,6 +46,11 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+// ponytail: mirrors clampZoom in app/review/page.tsx; extracted to lib if a 3rd caller appears.
+function clampZoom(value: number): number {
+  return Math.min(4, Math.max(1, Number(value.toFixed(2))));
+}
+
 export default function CapturePage() {
   const [query, setQuery] = useState('');
   const [merchants, setMerchants] = useState<Merchant[]>([]);
@@ -56,8 +61,79 @@ export default function CapturePage() {
   const [message, setMessage] = useState('');
   const [uploadProgress, setUploadProgress] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
+  const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
+  const [deleting, setDeleting] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const bulkInputRef = useRef<HTMLInputElement>(null);
+  const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+
+  const resetImageView = useCallback(() => {
+    setImageZoom(1);
+    setImagePan({ x: 0, y: 0 });
+  }, []);
+
+  const changeImageZoom = (delta: number) => {
+    setImageZoom((current) => {
+      const next = clampZoom(current + delta);
+      if (next === 1) setImagePan({ x: 0, y: 0 });
+      return next;
+    });
+  };
+
+  const openPreview = (index: number) => {
+    setPreviewIndex(index);
+    resetImageView();
+  };
+
+  const closePreview = () => {
+    setPreviewIndex(null);
+    dragRef.current = null;
+    resetImageView();
+  };
+
+  const deletePreviewPhoto = async () => {
+    if (previewIndex === null || deleting) return;
+    if (status === 'sent' || status === 'sending') {
+      setMessage('لا يمكن حذف الصورة بعد إرسال الجلسة للذكاء الاصطناعي.');
+      return;
+    }
+
+    const photo = photos[previewIndex];
+    if (!photo) return;
+
+    if (!window.confirm('هل تريد حذف هذه الصورة وإعادة رفع صورة أوضح؟')) return;
+
+    setDeleting(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/orders/${photo.orderId}`, { method: 'DELETE' });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'فشل حذف الصورة');
+        return;
+      }
+
+      URL.revokeObjectURL(photo.previewUrl);
+      const remaining = photos.filter((item) => item.orderId !== photo.orderId);
+      setPhotos(remaining);
+
+      if (remaining.length === 0) {
+        setPreviewIndex(null);
+        setMessage('تم حذف الصورة ولا توجد صور أخرى.');
+      } else {
+        setPreviewIndex(Math.min(previewIndex, remaining.length - 1));
+        resetImageView();
+      }
+    } catch {
+      setMessage('تعذّر حذف الصورة.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const searchMerchants = async () => {
     setMessage('');
@@ -316,10 +392,12 @@ export default function CapturePage() {
 
             {photos.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
-                {photos.map((photo) => (
-                  <div
-                    className="aspect-square overflow-hidden rounded-md border border-slate-200 bg-white"
+                {photos.map((photo, index) => (
+                  <button
+                    className="aspect-square overflow-hidden rounded-md border border-slate-200 bg-white p-0"
                     key={photo.orderId}
+                    onClick={() => openPreview(index)}
+                    type="button"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -327,7 +405,7 @@ export default function CapturePage() {
                       className="h-full w-full object-cover"
                       src={photo.previewUrl}
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -400,6 +478,104 @@ export default function CapturePage() {
                   type="button"
                 >
                   بدء جلسة جديدة
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {previewIndex !== null && photos[previewIndex] && (
+          <div className="fixed inset-0 z-50 flex flex-col bg-black/95" role="dialog" aria-modal="true">
+            <div className="flex items-center justify-between gap-2 px-3 py-2">
+              <button
+                className="idv-button idv-button-light idv-button-small text-sm"
+                onClick={closePreview}
+                type="button"
+              >
+                إغلاق
+              </button>
+              <span className="text-xs font-semibold text-white/80">
+                الصورة {photos[previewIndex].sequence}
+              </span>
+              <div className="flex gap-1">
+                <button
+                  className="idv-button idv-button-light idv-button-small px-3 text-sm"
+                  disabled={deleting}
+                  onClick={() => changeImageZoom(0.25)}
+                  type="button"
+                >
+                  تكبير
+                </button>
+                <button
+                  className="idv-button idv-button-light idv-button-small px-3 text-sm"
+                  disabled={deleting}
+                  onClick={() => changeImageZoom(-0.25)}
+                  type="button"
+                >
+                  تصغير
+                </button>
+                <button
+                  className="idv-button idv-button-light idv-button-small px-3 text-sm"
+                  disabled={deleting}
+                  onClick={resetImageView}
+                  type="button"
+                >
+                  إعادة ضبط
+                </button>
+              </div>
+            </div>
+
+            <div className="relative flex flex-1 items-center justify-center overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt={`إيصال ${photos[previewIndex].sequence}`}
+                className={`max-h-full max-w-full touch-none object-contain ${
+                  imageZoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''
+                }`}
+                draggable={false}
+                onPointerDown={(event) => {
+                  if (imageZoom === 1) return;
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  dragRef.current = {
+                    x: event.clientX,
+                    y: event.clientY,
+                    panX: imagePan.x,
+                    panY: imagePan.y,
+                  };
+                }}
+                onPointerMove={(event) => {
+                  if (!dragRef.current) return;
+                  setImagePan({
+                    x: dragRef.current.panX + event.clientX - dragRef.current.x,
+                    y: dragRef.current.panY + event.clientY - dragRef.current.y,
+                  });
+                }}
+                onPointerUp={() => {
+                  dragRef.current = null;
+                }}
+                onPointerCancel={() => {
+                  dragRef.current = null;
+                }}
+                onLostPointerCapture={() => {
+                  dragRef.current = null;
+                }}
+                src={photos[previewIndex].previewUrl}
+                style={{
+                  transform: `translate(${imagePan.x}px, ${imagePan.y}px) scale(${imageZoom})`,
+                  transformOrigin: 'center',
+                }}
+              />
+            </div>
+
+            {status !== 'sent' && (
+              <div className="px-3 py-2">
+                <button
+                  className="idv-button idv-button-light idv-button-small w-full text-sm [--idv-fg:#dc2626]"
+                  disabled={deleting || status === 'sending'}
+                  onClick={deletePreviewPhoto}
+                  type="button"
+                >
+                  {deleting ? 'جاري الحذف...' : 'حذف الصورة'}
                 </button>
               </div>
             )}
