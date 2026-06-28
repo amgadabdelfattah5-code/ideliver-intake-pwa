@@ -550,18 +550,11 @@ export default function CapturePage() {
 
         {previewIndex !== null && photos[previewIndex] && (
           <div className="fixed inset-x-0 top-0 z-50 flex h-[100dvh] touch-none flex-col bg-black/95" role="dialog" aria-modal="true">
-            <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
-              <button
-                className="idv-button idv-button-light idv-button-small text-sm"
-                onClick={closePreview}
-                type="button"
-              >
-                إغلاق
-              </button>
+            <div className="flex shrink-0 flex-col items-center gap-2 px-3 py-2">
               <span className="text-xs font-semibold text-white/80">
                 الصورة {photos[previewIndex].sequence}
               </span>
-              <div className="flex gap-1">
+              <div className="grid grid-cols-2 gap-2" dir="rtl">
                 <button
                   className="idv-button idv-button-light idv-button-small px-3 text-sm"
                   disabled={deleting}
@@ -585,6 +578,13 @@ export default function CapturePage() {
                   type="button"
                 >
                   إعادة ضبط
+                </button>
+                <button
+                  className="idv-button idv-button-light idv-button-small text-sm"
+                  onClick={closePreview}
+                  type="button"
+                >
+                  إغلاق
                 </button>
               </div>
             </div>
@@ -684,7 +684,7 @@ export default function CapturePage() {
             </div>
 
             {status !== 'sent' && (
-              <div className="shrink-0 bg-black/95 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <div className="shrink-0 px-3 py-2">
                 <button
                   className="idv-button idv-button-light idv-button-small w-full text-sm [--idv-fg:#dc2626]"
                   disabled={deleting || status === 'sending'}
