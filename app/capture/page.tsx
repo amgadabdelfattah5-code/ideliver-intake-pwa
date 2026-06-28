@@ -51,6 +51,25 @@ function clampZoom(value: number): number {
   return Math.min(4, Math.max(1, Number(value.toFixed(2))));
 }
 
+// ponytail: structural type so both React.TouchList and DOM TouchList fit without imports.
+type TouchPointList = ArrayLike<{ clientX: number; clientY: number }>;
+
+function getTouchDistance(touches: TouchPointList): number {
+  if (touches.length < 2) return 0;
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+function getTouchCenter(touches: TouchPointList): { x: number; y: number } {
+  if (touches.length === 0) return { x: 0, y: 0 };
+  if (touches.length === 1) return { x: touches[0].clientX, y: touches[0].clientY };
+  return {
+    x: (touches[0].clientX + touches[1].clientX) / 2,
+    y: (touches[0].clientY + touches[1].clientY) / 2,
+  };
+}
+
 export default function CapturePage() {
   const [query, setQuery] = useState('');
   const [merchants, setMerchants] = useState<Merchant[]>([]);
@@ -67,20 +86,33 @@ export default function CapturePage() {
   const [deleting, setDeleting] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const bulkInputRef = useRef<HTMLInputElement>(null);
+  const imageViewRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const touchGestureRef = useRef<{
+    distance: number;
+    centerX: number;
+    centerY: number;
+    zoom: number;
+    panX: number;
+    panY: number;
+  } | null>(null);
 
-  const resetImageView = useCallback(() => {
-    setImageZoom(1);
-    setImagePan({ x: 0, y: 0 });
+  const applyImageView = useCallback((zoom: number, pan: { x: number; y: number }) => {
+    const nextZoom = clampZoom(zoom);
+    const nextPan = nextZoom === 1 ? { x: 0, y: 0 } : pan;
+
+    imageViewRef.current = { zoom: nextZoom, pan: nextPan };
+    setImageZoom(nextZoom);
+    setImagePan(nextPan);
   }, []);
 
-  const changeImageZoom = (delta: number) => {
-    setImageZoom((current) => {
-      const next = clampZoom(current + delta);
-      if (next === 1) setImagePan({ x: 0, y: 0 });
-      return next;
-    });
-  };
+  const resetImageView = useCallback(() => {
+    applyImageView(1, { x: 0, y: 0 });
+  }, [applyImageView]);
+
+  const changeImageZoom = useCallback((delta: number) => {
+    applyImageView(imageViewRef.current.zoom + delta, imageViewRef.current.pan);
+  }, [applyImageView]);
 
   const openPreview = (index: number) => {
     setPreviewIndex(index);
@@ -90,6 +122,7 @@ export default function CapturePage() {
   const closePreview = () => {
     setPreviewIndex(null);
     dragRef.current = null;
+    touchGestureRef.current = null;
     resetImageView();
   };
 
@@ -302,6 +335,9 @@ export default function CapturePage() {
     setStatus('idle');
     setMessage('');
     setUploadProgress('');
+    setPreviewIndex(null);
+    dragRef.current = null;
+    touchGestureRef.current = null;
   };
 
   return (
@@ -485,7 +521,7 @@ export default function CapturePage() {
         )}
 
         {previewIndex !== null && photos[previewIndex] && (
-          <div className="fixed inset-0 z-50 flex flex-col bg-black/95" role="dialog" aria-modal="true">
+          <div className="fixed inset-0 z-50 flex touch-none flex-col bg-black/95" role="dialog" aria-modal="true">
             <div className="flex items-center justify-between gap-2 px-3 py-2">
               <button
                 className="idv-button idv-button-light idv-button-small text-sm"
@@ -525,7 +561,7 @@ export default function CapturePage() {
               </div>
             </div>
 
-            <div className="relative flex flex-1 items-center justify-center overflow-hidden">
+            <div className="relative flex flex-1 touch-none items-center justify-center overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt={`إيصال ${photos[previewIndex].sequence}`}
@@ -534,18 +570,19 @@ export default function CapturePage() {
                 }`}
                 draggable={false}
                 onPointerDown={(event) => {
-                  if (imageZoom === 1) return;
+                  // ponytail: pointer handlers are mouse-only; touch gestures own their own path below.
+                  if (imageViewRef.current.zoom === 1 || event.pointerType !== 'mouse') return;
                   event.currentTarget.setPointerCapture(event.pointerId);
                   dragRef.current = {
                     x: event.clientX,
                     y: event.clientY,
-                    panX: imagePan.x,
-                    panY: imagePan.y,
+                    panX: imageViewRef.current.pan.x,
+                    panY: imageViewRef.current.pan.y,
                   };
                 }}
                 onPointerMove={(event) => {
                   if (!dragRef.current) return;
-                  setImagePan({
+                  applyImageView(imageViewRef.current.zoom, {
                     x: dragRef.current.panX + event.clientX - dragRef.current.x,
                     y: dragRef.current.panY + event.clientY - dragRef.current.y,
                   });
@@ -558,6 +595,57 @@ export default function CapturePage() {
                 }}
                 onLostPointerCapture={() => {
                   dragRef.current = null;
+                }}
+                onTouchStart={(event) => {
+                  if (event.touches.length === 0) return;
+                  const center = getTouchCenter(event.touches);
+                  touchGestureRef.current = {
+                    distance: getTouchDistance(event.touches),
+                    centerX: center.x,
+                    centerY: center.y,
+                    zoom: imageViewRef.current.zoom,
+                    panX: imageViewRef.current.pan.x,
+                    panY: imageViewRef.current.pan.y,
+                  };
+                }}
+                onTouchMove={(event) => {
+                  const gesture = touchGestureRef.current;
+                  if (!gesture || event.touches.length === 0) return;
+                  event.preventDefault();
+                  const center = getTouchCenter(event.touches);
+
+                  if (event.touches.length >= 2 && gesture.distance > 0) {
+                    const scale = getTouchDistance(event.touches) / gesture.distance;
+                    const nextZoom = clampZoom(gesture.zoom * scale);
+                    applyImageView(nextZoom, {
+                      x: gesture.panX + (center.x - gesture.centerX),
+                      y: gesture.panY + (center.y - gesture.centerY),
+                    });
+                  } else if (event.touches.length === 1 && imageViewRef.current.zoom > 1) {
+                    applyImageView(imageViewRef.current.zoom, {
+                      x: gesture.panX + (center.x - gesture.centerX),
+                      y: gesture.panY + (center.y - gesture.centerY),
+                    });
+                  }
+                }}
+                onTouchEnd={(event) => {
+                  if (event.touches.length === 0) {
+                    touchGestureRef.current = null;
+                    return;
+                  }
+                  // re-baseline for the remaining finger(s) so a lifted pinch finger keeps panning
+                  const center = getTouchCenter(event.touches);
+                  touchGestureRef.current = {
+                    distance: getTouchDistance(event.touches),
+                    centerX: center.x,
+                    centerY: center.y,
+                    zoom: imageViewRef.current.zoom,
+                    panX: imageViewRef.current.pan.x,
+                    panY: imageViewRef.current.pan.y,
+                  };
+                }}
+                onTouchCancel={() => {
+                  touchGestureRef.current = null;
                 }}
                 src={photos[previewIndex].previewUrl}
                 style={{
