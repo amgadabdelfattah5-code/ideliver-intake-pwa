@@ -1,15 +1,20 @@
-// ponytail: stub until a WhatsApp provider is chosen (Meta Cloud API, Twilio, UltraMsg, etc.).
-// When WHATSAPP_PROVIDER_URL + REVIEWER_WHATSAPP_PHONE are set, this posts to that endpoint.
-// Otherwise it logs the message so OCR completion is observable. Replace the provider block
-// with the real integration; the message format is already what reviewers expect.
+import { evolutionConfigured, sendEvolutionText } from '@/lib/evolution-whatsapp';
 
-const REVIEWER_PHONE = process.env.REVIEWER_WHATSAPP_PHONE || '';
-const PROVIDER_URL = process.env.WHATSAPP_PROVIDER_URL || '';
+const DEFAULT_RECIPIENTS = ['+201026000806', '+201003323669'];
 
 export interface OcrCompletionPayload {
   merchantName: string;
   total: number;
   failed: number;
+}
+
+function recipients(): string[] {
+  const configured =
+    process.env.OCR_COMPLETION_WHATSAPP_RECIPIENTS ||
+    process.env.DAILY_SUMMARY_WHATSAPP_RECIPIENTS;
+
+  if (!configured) return DEFAULT_RECIPIENTS;
+  return configured.split(',').map((item) => item.trim()).filter(Boolean);
 }
 
 export function buildOcrCompletionMessage({
@@ -20,29 +25,39 @@ export function buildOcrCompletionMessage({
   const processed = total - failed;
 
   if (failed > 0) {
-    return `تمت معالجة ${processed} من ${total} صورة، ويوجد ${failed} تحتاج مراجعة. برجاء الدخول إلى قائمة المراجعة.`;
+    return [
+      'تنبيه iDeliver',
+      '',
+      `تمت معالجة ${processed} من ${total} صورة للتاجر ${merchantName}.`,
+      `يوجد ${failed} إيصال يحتاج مراجعة.`,
+      '',
+      'برجاء الدخول إلى قائمة المراجعة لمراجعة البيانات وإرسال الشحنات.',
+    ].join('\n');
   }
 
-  return `تم الانتهاء من استخراج بيانات ${total} إيصال للتاجر ${merchantName}. برجاء الدخول إلى قائمة المراجعة.`;
+  return [
+    'تنبيه iDeliver',
+    '',
+    `تم الانتهاء من معالجة ${total} صورة للتاجر ${merchantName}.`,
+    '',
+    'الصور جاهزة الآن في قائمة المراجعة.',
+    'برجاء مراجعة البيانات وإرسال الشحنات.',
+  ].join('\n');
 }
 
-// Best-effort: never throws. OCR success must not depend on the notification channel.
+// Best-effort: OCR success must not depend on the notification channel.
 export async function notifyOcrComplete(payload: OcrCompletionPayload): Promise<void> {
   const message = buildOcrCompletionMessage(payload);
+  const targetRecipients = recipients();
 
-  if (!REVIEWER_PHONE || !PROVIDER_URL) {
-    console.log(`[whatsapp-stub] to=${REVIEWER_PHONE || '(unset)'} message=${message}`);
+  if (!evolutionConfigured()) {
+    console.log(`[evolution-ocr-stub] to=${targetRecipients.join(',')} message=${message}`);
     return;
   }
 
-  // TODO: replace with the real provider request shape once selected.
   try {
-    await fetch(PROVIDER_URL, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ to: REVIEWER_PHONE, message }),
-    });
+    await Promise.all(targetRecipients.map((recipient) => sendEvolutionText(recipient, message)));
   } catch (error) {
-    console.error('[whatsapp-notify] send failed', error);
+    console.error('[evolution-ocr-notify] send failed', error);
   }
 }

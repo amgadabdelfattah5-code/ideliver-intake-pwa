@@ -65,6 +65,8 @@ function validateShipmentFields(fields: FieldMap): string[] {
   }
   if (!hasMoneyValue(fields.shippingFeePrinted)) {
     errors.push('مصاريف الشحن مطلوبة. اكتب 0 إذا لم توجد قيمة.');
+  } else if (money(fields.shippingFeePrinted) <= 0) {
+    errors.push('يجب أن تكون مصاريف الشحن أكبر من صفر.');
   }
   if (!fields.COD) {
     errors.push('الإجمالي مطلوب.');
