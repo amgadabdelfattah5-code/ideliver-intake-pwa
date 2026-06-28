@@ -10,13 +10,41 @@ interface StaffUser {
   role: 'admin' | 'pickup' | 'data_entry';
 }
 
+interface RememberedCredentials {
+  username: string;
+  password: string;
+}
+
+const REMEMBER_STORAGE_KEY = 'idv_remember';
+
+function readRemembered(): RememberedCredentials | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = localStorage.getItem(REMEMBER_STORAGE_KEY);
+    if (!saved) return null;
+
+    const parsed = JSON.parse(saved) as Partial<RememberedCredentials>;
+    if (typeof parsed.username === 'string' && typeof parsed.password === 'string') {
+      return { username: parsed.username, password: parsed.password };
+    }
+  } catch {
+    // Fall through and remove the bad value below.
+  }
+
+  localStorage.removeItem(REMEMBER_STORAGE_KEY);
+  return null;
+}
+
 export default function Home() {
+  const [initialRemembered] = useState(readRemembered);
   const [user, setUser] = useState<StaffUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState(initialRemembered?.username ?? '');
+  const [password, setPassword] = useState(initialRemembered?.password ?? '');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(initialRemembered != null);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -43,6 +71,13 @@ export default function Home() {
         return;
       }
 
+      if (rememberMe) {
+        // ponytail: Internal staff PWA convenience; replace with device-bound refresh/session later if risk increases.
+        localStorage.setItem(REMEMBER_STORAGE_KEY, JSON.stringify({ username, password }));
+      } else {
+        localStorage.removeItem(REMEMBER_STORAGE_KEY);
+      }
+
       setUser({
         wpUserId: data.user.id,
         username: data.user.username,
@@ -57,6 +92,10 @@ export default function Home() {
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
+    const remembered = readRemembered();
+    setUsername(remembered?.username ?? '');
+    setPassword(remembered?.password ?? '');
+    setRememberMe(remembered != null);
     setUser(null);
   };
 
@@ -124,16 +163,48 @@ export default function Home() {
               />
             </label>
 
-            <label className="block">
+            <div className="block">
               <span className="text-sm font-semibold text-[#17365F]">كلمة مرور التطبيق</span>
+              <div className="relative mt-1">
+                <input
+                  className="h-12 w-full rounded-md border border-slate-300 bg-white pl-11 pr-3 text-base font-medium text-[#17365F] shadow-sm outline-none placeholder:text-slate-400 focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/25"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="كلمة مرور تطبيق WordPress"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                  className="absolute inset-y-0 left-0 flex w-11 items-center justify-center text-slate-500 hover:text-[#17365F]"
+                >
+                  {showPassword ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                      <line x1="2" y1="2" x2="22" y2="22" />
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2">
               <input
-                className="mt-1 h-12 w-full rounded-md border border-slate-300 bg-white px-3 text-base font-medium text-[#17365F] shadow-sm outline-none placeholder:text-slate-400 focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/25"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                type="password"
-                autoComplete="current-password"
-                placeholder="كلمة مرور تطبيق WordPress"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 accent-[#F27321]"
               />
+              <span className="text-sm font-medium text-[#17365F]">تذكرني</span>
             </label>
 
             {error && (
