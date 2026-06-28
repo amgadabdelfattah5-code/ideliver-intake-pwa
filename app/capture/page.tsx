@@ -549,7 +549,7 @@ export default function CapturePage() {
         )}
 
         {previewIndex !== null && photos[previewIndex] && (
-          <div className="fixed inset-0 z-50 flex touch-none flex-col bg-black/95" role="dialog" aria-modal="true">
+          <div className="fixed inset-x-0 top-0 z-50 flex h-[100dvh] touch-none flex-col bg-black/95" role="dialog" aria-modal="true">
             <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
               <button
                 className="idv-button idv-button-light idv-button-small text-sm"
