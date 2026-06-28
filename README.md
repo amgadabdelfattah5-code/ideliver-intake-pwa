@@ -48,4 +48,4 @@ Current work is Phase 0 foundation only:
 
 Do not expand AI, UI polish, or shipment automation until `/api/health` is green on EasyPanel.
 
-<!-- auto-deploy webhook test: 2026-06-28 -->
+<!-- auto-deploy webhook test 2: 2026-06-28 16:30 -->
