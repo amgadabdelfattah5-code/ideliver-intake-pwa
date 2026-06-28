@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { egyptGovernorates, normalizeEgyptGovernorate } from '@/lib/egypt-governorates';
 
@@ -179,10 +179,10 @@ export default function ReviewPage() {
   );
   const order = pendingOrders[currentOrderIndex];
 
-  const resetImageView = () => {
+  const resetImageView = useCallback(() => {
     setImageZoom(1);
     setImagePan({ x: 0, y: 0 });
-  };
+  }, []);
 
   const changeImageZoom = (delta: number) => {
     setImageZoom((current) => {
@@ -192,15 +192,15 @@ export default function ReviewPage() {
     });
   };
 
-  const loadQueue = async () => {
+  const loadQueue = useCallback(async () => {
     setLoading(true);
     const response = await fetch('/api/review/queue');
     const data = await response.json();
     setQueue(data.merchants || []);
     setLoading(false);
-  };
+  }, []);
 
-  const loadSession = async (sessionId: string, preferredIndex = 0) => {
+  const loadSession = useCallback(async (sessionId: string, preferredIndex = 0) => {
     const response = await fetch(`/api/sessions/${sessionId}/details`);
     const data = await response.json();
 
@@ -220,7 +220,7 @@ export default function ReviewPage() {
     setDraft(fieldsToDraft(openOrders[nextIndex]?.correctedFields || openOrders[nextIndex]?.aiFields || null));
     setPricingMode('sum');
     resetImageView();
-  };
+  }, [resetImageView]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -235,7 +235,7 @@ export default function ReviewPage() {
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [loadQueue, loadSession]);
 
   const submitOrder = async () => {
     if (!order || !selectedSession || submitting) return;
@@ -381,23 +381,23 @@ export default function ReviewPage() {
                     <div className="mt-3 grid gap-2">
                       {merchant.sessions.map((session) => (
                         <div
-                          className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-3 hover:bg-slate-50"
+                          className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-3"
                           key={session.id}
                         >
+                          <div className="flex flex-1 flex-col">
+                            <span className="block text-sm font-semibold text-slate-800">
+                              {session.orderCount} طلب
+                            </span>
+                            <span className="block text-xs text-slate-500">
+                              {new Date(session.createdAt).toLocaleString('ar-EG')}
+                            </span>
+                          </div>
                           <button
-                            className="flex flex-1 items-center justify-between text-left"
+                            className="idv-button idv-button-light idv-button-small shrink-0 text-sm"
                             onClick={() => loadSession(session.id)}
                             type="button"
                           >
-                            <span>
-                              <span className="block text-sm font-semibold text-slate-800">
-                                {session.orderCount} طلب
-                              </span>
-                              <span className="block text-xs text-slate-500">
-                                {new Date(session.createdAt).toLocaleString('ar-EG')}
-                              </span>
-                            </span>
-                            <span className="text-sm font-semibold text-[#F27321]">فتح</span>
+                            فتح
                           </button>
                           <button
                             className="idv-button idv-button-light idv-button-small shrink-0 text-sm [--idv-fg:#dc2626]"
