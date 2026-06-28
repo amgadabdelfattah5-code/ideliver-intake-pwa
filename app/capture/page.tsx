@@ -587,6 +587,16 @@ export default function CapturePage() {
                   إغلاق
                 </button>
               </div>
+              {status !== 'sent' && (
+                <button
+                  className="idv-button idv-button-light idv-button-small w-full text-sm [--idv-fg:#dc2626]"
+                  disabled={deleting || status === 'sending'}
+                  onClick={() => deletePhotoAtIndex(previewIndex)}
+                  type="button"
+                >
+                  {deleting ? 'جاري الحذف...' : 'حذف الصورة'}
+                </button>
+              )}
             </div>
 
             <div className="relative flex min-h-0 flex-1 touch-none items-center justify-center overflow-hidden">
@@ -682,19 +692,6 @@ export default function CapturePage() {
                 }}
               />
             </div>
-
-            {status !== 'sent' && (
-              <div className="shrink-0 px-3 py-2">
-                <button
-                  className="idv-button idv-button-light idv-button-small w-full text-sm [--idv-fg:#dc2626]"
-                  disabled={deleting || status === 'sending'}
-                  onClick={() => deletePhotoAtIndex(previewIndex)}
-                  type="button"
-                >
-                  {deleting ? 'جاري الحذف...' : 'حذف الصورة'}
-                </button>
-              </div>
-            )}
           </div>
         )}
 
