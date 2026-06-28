@@ -5,8 +5,6 @@ import { requireRole } from '@/lib/auth';
 import { evolutionConfigured, sendEvolutionText } from '@/lib/evolution-whatsapp';
 import { prisma } from '@/lib/prisma';
 
-const DEFAULT_RECIPIENTS = ['+201026000806', '+201003323669'];
-
 function cairoDateKey(date = new Date()): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Africa/Cairo',
@@ -37,7 +35,7 @@ function formatMoney(value: number): string {
 
 function recipients(): string[] {
   const configured = process.env.DAILY_SUMMARY_WHATSAPP_RECIPIENTS;
-  if (!configured) return DEFAULT_RECIPIENTS;
+  if (!configured) return [];
   return configured.split(',').map((item) => item.trim()).filter(Boolean);
 }
 

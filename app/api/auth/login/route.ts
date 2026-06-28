@@ -4,9 +4,19 @@ import { cookies } from 'next/headers';
 import { createSessionToken, staffSessionCookieName, staffSessionMaxAgeSeconds } from '@/lib/session';
 import { verifyLocalPwaAccount } from '@/lib/local-pwa-accounts';
 import { getWpJsonBase } from '@/lib/wp-client';
+import { clearLoginAttempts, isLoginRateLimited, recordFailedLogin } from '@/lib/login-rate-limit';
 
 // Minimal staff auth: verify WP app-password, issue cookie session
 export async function POST(req: Request) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+
+  if (isLoginRateLimited(ip)) {
+    return NextResponse.json(
+      { error: 'محاولات كثيرة لتسجيل الدخول، حاول مرة أخرى بعد 15 دقيقة' },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
     const { username, password } = body;
@@ -17,6 +27,7 @@ export async function POST(req: Request) {
 
     const localAccount = verifyLocalPwaAccount(username, password);
     if (localAccount) {
+      clearLoginAttempts(ip);
       const token = createSessionToken(localAccount);
       const cookieStore = await cookies();
 
@@ -50,9 +61,11 @@ export async function POST(req: Request) {
     });
 
     if (!wpVerify.ok) {
+      recordFailedLogin(ip);
       return NextResponse.json({ error: 'بيانات الدخول غير صحيحة' }, { status: 401 });
     }
 
+    clearLoginAttempts(ip);
     const wpUser = await wpVerify.json();
     const email = wpUser.email || username;
     const displayName = wpUser.name || wpUser.slug || username;

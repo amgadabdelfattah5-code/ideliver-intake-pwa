@@ -118,10 +118,13 @@ async function extractOrder(order: ExtractionOrderInput): Promise<ExtractionResu
     return await extractWithHermesOcr(order);
   } catch (error) {
     if (allowStubFallback()) {
+      // confidence forced to 0 so this is never mistaken for a real read.
       return {
         ...stubResult(order),
+        confidence: 0,
+        fieldConfidence: {},
         warnings: [
-          `Hermes OCR failed and stub fallback was used: ${
+          `HERMES OCR FAILED — STUB DATA, DO NOT TRUST: ${
             error instanceof Error ? error.message : String(error)
           }`,
         ],

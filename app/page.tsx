@@ -10,41 +10,26 @@ interface StaffUser {
   role: 'admin' | 'pickup' | 'data_entry';
 }
 
-interface RememberedCredentials {
-  username: string;
-  password: string;
-}
-
 const REMEMBER_STORAGE_KEY = 'idv_remember';
 
-function readRemembered(): RememberedCredentials | null {
+// Only the username is remembered — never the password — so a stolen
+// device/browser profile doesn't hand over a working credential.
+function readRememberedUsername(): string | null {
   if (typeof window === 'undefined') return null;
-  try {
-    const saved = localStorage.getItem(REMEMBER_STORAGE_KEY);
-    if (!saved) return null;
-
-    const parsed = JSON.parse(saved) as Partial<RememberedCredentials>;
-    if (typeof parsed.username === 'string' && typeof parsed.password === 'string') {
-      return { username: parsed.username, password: parsed.password };
-    }
-  } catch {
-    // Fall through and remove the bad value below.
-  }
-
-  localStorage.removeItem(REMEMBER_STORAGE_KEY);
-  return null;
+  const saved = localStorage.getItem(REMEMBER_STORAGE_KEY);
+  return saved || null;
 }
 
 export default function Home() {
-  const [initialRemembered] = useState(readRemembered);
+  const [initialUsername] = useState(readRememberedUsername);
   const [user, setUser] = useState<StaffUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [username, setUsername] = useState(initialRemembered?.username ?? '');
-  const [password, setPassword] = useState(initialRemembered?.password ?? '');
+  const [username, setUsername] = useState(initialUsername ?? '');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(initialRemembered != null);
+  const [rememberMe, setRememberMe] = useState(initialUsername != null);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -72,8 +57,7 @@ export default function Home() {
       }
 
       if (rememberMe) {
-        // ponytail: Internal staff PWA convenience; replace with device-bound refresh/session later if risk increases.
-        localStorage.setItem(REMEMBER_STORAGE_KEY, JSON.stringify({ username, password }));
+        localStorage.setItem(REMEMBER_STORAGE_KEY, username);
       } else {
         localStorage.removeItem(REMEMBER_STORAGE_KEY);
       }
@@ -92,9 +76,9 @@ export default function Home() {
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
-    const remembered = readRemembered();
-    setUsername(remembered?.username ?? '');
-    setPassword(remembered?.password ?? '');
+    const remembered = readRememberedUsername();
+    setUsername(remembered ?? '');
+    setPassword('');
     setRememberMe(remembered != null);
     setUser(null);
   };
