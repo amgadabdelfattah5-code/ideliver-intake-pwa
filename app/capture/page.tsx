@@ -84,6 +84,7 @@ export default function CapturePage() {
   const [imageZoom, setImageZoom] = useState(1);
   const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
   const [deleting, setDeleting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const bulkInputRef = useRef<HTMLInputElement>(null);
   const imageViewRef = useRef({ zoom: 1, pan: { x: 0, y: 0 } });
@@ -347,6 +348,30 @@ export default function CapturePage() {
     touchGestureRef.current = null;
   };
 
+  const cancelSession = async () => {
+    if (!sessionId || cancelling) return;
+    if (!window.confirm('هل تريد إلغاء هذه الجلسة؟ سيتم حذف جميع الصور المرفوعة ولا يمكن التراجع عن ذلك.')) return;
+
+    setCancelling(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'تعذّر إلغاء الجلسة');
+        return;
+      }
+
+      resetSession();
+    } catch {
+      setMessage('تعذّر إلغاء الجلسة.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#f6f8fb]">
       <header className="border-b border-slate-200 bg-white">
@@ -526,6 +551,15 @@ export default function CapturePage() {
                   type="button"
                 >
                   {status === 'sending' ? 'جاري الإرسال...' : `إرسال ${photos.length} طلب`}
+                </button>
+
+                <button
+                  className="idv-button idv-button-light h-12 text-sm [--idv-fg:#dc2626]"
+                  disabled={cancelling || status === 'capturing' || status === 'sending'}
+                  onClick={cancelSession}
+                  type="button"
+                >
+                  {cancelling ? 'جاري الإلغاء...' : 'إلغاء الجلسة'}
                 </button>
               </div>
             ) : (
