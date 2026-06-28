@@ -1,5 +1,7 @@
-import { mkdir, readFile, writeFile } from 'fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'fs/promises';
 import path from 'path';
+
+const knownPhotoExtensions = ['png', 'jpg', 'webp', 'heic'] as const;
 
 export interface StoredPhoto {
   photoUrl: string;
@@ -33,6 +35,21 @@ function fileName(orderId: string, contentType: string): string {
 
 function dataUrl(bytes: Buffer, contentType: string): string {
   return `data:${contentType};base64,${bytes.toString('base64')}`;
+}
+
+// Best-effort: remove a stored photo file in file mode. Tries every known extension.
+// Never throws — missing files are expected in data-url mode or when nothing was stored.
+export async function deleteStoredPhoto(orderId: string): Promise<void> {
+  if (storageMode() !== 'file') return;
+
+  const dir = storageDir();
+  for (const extension of knownPhotoExtensions) {
+    try {
+      await unlink(path.join(dir, `${orderId}.${extension}`));
+    } catch {
+      // File missing or wrong extension — nothing to do.
+    }
+  }
 }
 
 export async function storePhoto(input: PhotoInput): Promise<StoredPhoto> {

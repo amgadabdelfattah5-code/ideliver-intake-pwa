@@ -167,6 +167,7 @@ export default function ReviewPage() {
   const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
   const [pricingMode, setPricingMode] = useState<'sum' | 'fromTotal'>('sum');
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
   const pendingOrders = useMemo(
@@ -285,6 +286,67 @@ export default function ReviewPage() {
     }
   };
 
+  const cancelSession = async (sessionId: string) => {
+    const confirmed = window.confirm(
+      'هل أنت متأكد من إلغاء هذه الجلسة؟ سيتم حذف جميع الصور والطلبات غير المرسلة داخلها.'
+    );
+    if (!confirmed) return;
+
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'فشل إلغاء الجلسة');
+        return;
+      }
+
+      setMessage('تم إلغاء الجلسة.');
+      await loadQueue();
+    } catch {
+      setMessage('تعذّر إلغاء الجلسة.');
+    }
+  };
+
+  const deleteOrder = async () => {
+    if (!order || !selectedSession || deleting) return;
+
+    const confirmed = window.confirm(
+      'هل أنت متأكد من حذف هذه الصورة؟ سيتم حذف الطلب من قائمة المراجعة.'
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/orders/${order.id}`, { method: 'DELETE' });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || 'فشل حذف الصورة');
+        return;
+      }
+
+      if (data.remainingInSession === 0) {
+        setMessage('تم حذف الصورة ولا توجد طلبات أخرى في هذه الجلسة.');
+        setSelectedSession(null);
+        setCurrentOrderIndex(0);
+        await loadQueue();
+        return;
+      }
+
+      await loadSession(selectedSession.id, currentOrderIndex);
+      setMessage('تم حذف الصورة.');
+    } catch {
+      setMessage('تعذّر حذف الصورة.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-4">
@@ -318,22 +380,33 @@ export default function ReviewPage() {
                     <h2 className="text-base font-bold text-[#17365F]">{merchant.name}</h2>
                     <div className="mt-3 grid gap-2">
                       {merchant.sessions.map((session) => (
-                        <button
-                          className="flex w-full items-center justify-between rounded-md border border-slate-200 px-3 py-3 text-left hover:bg-slate-50"
+                        <div
+                          className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-3 hover:bg-slate-50"
                           key={session.id}
-                          onClick={() => loadSession(session.id)}
-                          type="button"
                         >
-                          <span>
-                            <span className="block text-sm font-semibold text-slate-800">
-                              {session.orderCount} طلب
+                          <button
+                            className="flex flex-1 items-center justify-between text-left"
+                            onClick={() => loadSession(session.id)}
+                            type="button"
+                          >
+                            <span>
+                              <span className="block text-sm font-semibold text-slate-800">
+                                {session.orderCount} طلب
+                              </span>
+                              <span className="block text-xs text-slate-500">
+                                {new Date(session.createdAt).toLocaleString('ar-EG')}
+                              </span>
                             </span>
-                            <span className="block text-xs text-slate-500">
-                              {new Date(session.createdAt).toLocaleString('ar-EG')}
-                            </span>
-                          </span>
-                          <span className="text-sm font-semibold text-[#F27321]">فتح</span>
-                        </button>
+                            <span className="text-sm font-semibold text-[#F27321]">فتح</span>
+                          </button>
+                          <button
+                            className="idv-button idv-button-light idv-button-small shrink-0 text-sm [--idv-fg:#dc2626]"
+                            onClick={() => cancelSession(session.id)}
+                            type="button"
+                          >
+                            إلغاء
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -517,14 +590,22 @@ export default function ReviewPage() {
                   })}
                 </div>
 
-                <div className="mt-3">
+                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
                   <button
-                    className="idv-button h-11 w-full text-sm"
-                    disabled={submitting}
+                    className="idv-button h-11 text-sm"
+                    disabled={submitting || deleting}
                     onClick={submitOrder}
                     type="button"
                   >
                     {submitting ? 'جاري الإرسال...' : 'إرسال الشحنة'}
+                  </button>
+                  <button
+                    className="idv-button idv-button-light h-11 px-4 text-sm [--idv-fg:#dc2626]"
+                    disabled={submitting || deleting}
+                    onClick={deleteOrder}
+                    type="button"
+                  >
+                    {deleting ? 'جاري الحذف...' : 'حذف الصورة'}
                   </button>
                 </div>
               </div>
