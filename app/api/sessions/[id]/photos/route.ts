@@ -91,9 +91,17 @@ export async function POST(
 
   const { id } = await params;
 
+  let photo: UploadedPhoto;
   try {
-    const photo = await readPhoto(req);
+    photo = await readPhoto(req);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : String(error) },
+      { status: 400 }
+    );
+  }
 
+  try {
     const updatedSession = await prisma.session.update({
       where: { id },
       data: {
