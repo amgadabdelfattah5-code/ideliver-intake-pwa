@@ -10,13 +10,6 @@ import { clearLoginAttempts, isLoginRateLimited, recordFailedLogin } from '@/lib
 export async function POST(req: Request) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
-  if (isLoginRateLimited(ip)) {
-    return NextResponse.json(
-      { error: 'محاولات كثيرة لتسجيل الدخول، حاول مرة أخرى بعد 15 دقيقة' },
-      { status: 429 }
-    );
-  }
-
   try {
     const body = await req.json();
     const { username, password } = body;
@@ -25,9 +18,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' }, { status: 400 });
     }
 
+    if (isLoginRateLimited(ip, username)) {
+      return NextResponse.json(
+        { error: 'محاولات كثيرة لتسجيل الدخول، حاول مرة أخرى بعد 15 دقيقة' },
+        { status: 429 }
+      );
+    }
+
     const localAccount = verifyLocalPwaAccount(username, password);
     if (localAccount) {
-      clearLoginAttempts(ip);
+      clearLoginAttempts(ip, username);
       const token = createSessionToken(localAccount);
       const cookieStore = await cookies();
 
@@ -61,11 +61,11 @@ export async function POST(req: Request) {
     });
 
     if (!wpVerify.ok) {
-      recordFailedLogin(ip);
+      recordFailedLogin(ip, username);
       return NextResponse.json({ error: 'بيانات الدخول غير صحيحة' }, { status: 401 });
     }
 
-    clearLoginAttempts(ip);
+    clearLoginAttempts(ip, username);
     const wpUser = await wpVerify.json();
     const email = wpUser.email || username;
     const displayName = wpUser.name || wpUser.slug || username;
