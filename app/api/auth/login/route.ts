@@ -8,7 +8,10 @@ import { clearLoginAttempts, isLoginRateLimited, recordFailedLogin } from '@/lib
 
 // Minimal staff auth: verify WP app-password, issue cookie session
 export async function POST(req: Request) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  // The reverse proxy appends the real peer IP to X-Forwarded-For; the leftmost
+  // entry is client-supplied and trivially spoofable, so trust the rightmost one.
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const ip = forwardedFor?.split(',').pop()?.trim() || 'unknown';
 
   try {
     const body = await req.json();
