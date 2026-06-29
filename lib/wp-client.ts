@@ -1,4 +1,4 @@
-const DEFAULT_WP_JSON_BASE = 'https://ideliveregypt.com/wp-json';
+const DEFAULT_WP_JSON_BASE = 'https://shop.ideliveregypt.com/wp-json';
 const WP_USER = process.env.WP_APP_USER || 'amged.mohammed@gmail.com';
 const WP_PASSWORD = process.env.WP_APP_PASSWORD || '';
 
