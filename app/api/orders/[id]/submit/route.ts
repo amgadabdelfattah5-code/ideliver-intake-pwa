@@ -152,7 +152,7 @@ export async function POST(
 
       const merchantId = order.session.merchant.merchantId;
       const cod = money(fields.COD);
-      const productPrice = money(fields.price) || cod;
+      const productPrice = hasMoneyValue(fields.price) ? money(fields.price) : cod;
       const shippingFee = money(fields.shippingFeePrinted);
 
       const wpRes = await fetch(`${getLiquidShipBase()}/shipment`, {
