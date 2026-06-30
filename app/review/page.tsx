@@ -216,6 +216,13 @@ export default function ReviewPage() {
     const openOrders = session.orders.filter(
       (item) => item.status !== 'submitted' && item.status !== 'awaiting_merchant'
     );
+
+    if (openOrders.length === 0) {
+      await loadQueue();
+      setMessage('لا توجد طلبات معلقة في هذه الجلسة.');
+      return;
+    }
+
     const nextIndex = Math.min(preferredIndex, Math.max(openOrders.length - 1, 0));
 
     setSelectedSession(session);
@@ -223,7 +230,7 @@ export default function ReviewPage() {
     setDraft(fieldsToDraft(openOrders[nextIndex]?.correctedFields || openOrders[nextIndex]?.aiFields || null));
     setPricingMode('sum');
     resetImageView();
-  }, [resetImageView]);
+  }, [resetImageView, loadQueue]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
