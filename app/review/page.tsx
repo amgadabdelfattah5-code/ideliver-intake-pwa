@@ -165,6 +165,8 @@ export default function ReviewPage() {
   const [message, setMessage] = useState('');
   const [imageZoom, setImageZoom] = useState(1);
   const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
+  const [imageRotation, setImageRotation] = useState(0);
+  const [completionInfo, setCompletionInfo] = useState<{ merchantName: string; orderCount: number } | null>(null);
   const [pricingMode, setPricingMode] = useState<'sum' | 'fromTotal'>('sum');
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -182,6 +184,7 @@ export default function ReviewPage() {
   const resetImageView = useCallback(() => {
     setImageZoom(1);
     setImagePan({ x: 0, y: 0 });
+    setImageRotation(0);
   }, []);
 
   const changeImageZoom = (delta: number) => {
@@ -237,6 +240,14 @@ export default function ReviewPage() {
     return () => window.clearTimeout(timer);
   }, [loadQueue, loadSession]);
 
+  useEffect(() => {
+    if (!completionInfo) return;
+    const timer = window.setTimeout(() => {
+      window.location.href = '/review';
+    }, 15_000);
+    return () => window.clearTimeout(timer);
+  }, [completionInfo]);
+
   const submitOrder = async () => {
     if (!order || !selectedSession || submitting) return;
 
@@ -271,10 +282,12 @@ export default function ReviewPage() {
       }
 
       if (data.remainingInSession === 0) {
+        setCompletionInfo({
+          merchantName: selectedSession.merchant.name,
+          orderCount: selectedSession.orders.length,
+        });
         setSelectedSession(null);
         setCurrentOrderIndex(0);
-        await loadQueue();
-        setMessage('اكتملت جميع طلبات الجلسة.');
         return;
       }
 
@@ -369,7 +382,37 @@ export default function ReviewPage() {
       </header>
 
       <section className="mx-auto max-w-6xl px-4 py-2">
-        {!selectedSession ? (
+        {completionInfo ? (
+          <div className="flex min-h-[60vh] items-center justify-center py-10">
+            <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-sm text-center space-y-6">
+              <div className="text-5xl">✅</div>
+              <div>
+                <h2 className="text-xl font-bold text-[#17365F]">
+                  تم إرسال {completionInfo.orderCount} {completionInfo.orderCount === 1 ? 'طلب' : 'طلبات'} بنجاح
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">{completionInfo.merchantName}</p>
+                <p className="mt-3 text-sm font-medium text-slate-700">
+                  شكراً على عملك! سيتم توجيهك إلى قائمة المراجعة تلقائياً بعد 15 ثانية.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+                <a
+                  className="idv-button idv-button-light h-11 text-sm"
+                  href="/"
+                >
+                  الرئيسية
+                </a>
+                <a
+                  className="idv-button h-11 text-sm"
+                  href="/review"
+                >
+                  قائمة المراجعة
+                </a>
+              </div>
+            </div>
+          </div>
+        ) : !selectedSession ? (
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
             {queue.length === 0 ? (
               <p className="p-5 text-sm font-medium text-slate-600">لا توجد جلسات جاهزة للمراجعة.</p>
@@ -453,6 +496,20 @@ export default function ReviewPage() {
                       -
                     </button>
                     <button
+                      className="idv-button idv-button-light idv-button-small h-8 px-3 text-sm"
+                      onClick={() => setImageRotation((r) => (r + 90) % 360)}
+                      type="button"
+                    >
+                      ↻
+                    </button>
+                    <button
+                      className="idv-button idv-button-light idv-button-small h-8 px-3 text-sm"
+                      onClick={() => setImageRotation((r) => (r - 90 + 360) % 360)}
+                      type="button"
+                    >
+                      ↺
+                    </button>
+                    <button
                       className="idv-button idv-button-light idv-button-small h-8 px-3 text-xs"
                       onClick={resetImageView}
                       type="button"
@@ -492,7 +549,7 @@ export default function ReviewPage() {
                     }}
                     src={order.photoUrl}
                     style={{
-                      transform: `translate(${imagePan.x}px, ${imagePan.y}px) scale(${imageZoom})`,
+                      transform: `translate(${imagePan.x}px, ${imagePan.y}px) scale(${imageZoom}) rotate(${imageRotation}deg)`,
                       transformOrigin: 'center',
                     }}
                   />
