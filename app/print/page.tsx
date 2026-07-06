@@ -95,7 +95,11 @@ function Sticker({ order }: { order: PrintOrder }) {
 
   return (
     <div className="idv-sticker" data-sticker>
-      <div className="idv-sticker-brand">iDeliver Egypt</div>
+      <div className="idv-sticker-brand">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="idv-sticker-logo" src="/ideliver-logo.png" alt="" />
+        <span>iDeliver Egypt</span>
+      </div>
 
       <div className="idv-sticker-row idv-sticker-row-2">
         <div>
@@ -108,16 +112,28 @@ function Sticker({ order }: { order: PrintOrder }) {
         </div>
       </div>
 
-      <div className="idv-sticker-section">
-        <div className="idv-sticker-section-title">المستلم</div>
-        <div className="idv-sticker-value idv-sticker-value-lg">{STICKER_FIELDS.recipientName(order) || '—'}</div>
-        <div className="idv-sticker-value idv-sticker-value-mono idv-sticker-value-lg">
-          {STICKER_FIELDS.recipientPhone(order) || '—'}
+      <div className="idv-sticker-row idv-sticker-row-2">
+        <div>
+          <span className="idv-sticker-label">اسم المستلم</span>
+          <span className="idv-sticker-value idv-sticker-value-lg">{STICKER_FIELDS.recipientName(order) || '—'}</span>
         </div>
-        <div className="idv-sticker-value">{STICKER_FIELDS.governorate(order)}</div>
-        {STICKER_FIELDS.address(order) && (
-          <div className="idv-sticker-value">{STICKER_FIELDS.address(order)}</div>
-        )}
+        <div>
+          <span className="idv-sticker-label">رقم الهاتف</span>
+          <span className="idv-sticker-value idv-sticker-value-mono idv-sticker-value-lg">
+            {STICKER_FIELDS.recipientPhone(order) || '—'}
+          </span>
+        </div>
+      </div>
+
+      <div className="idv-sticker-row idv-sticker-row-2">
+        <div>
+          <span className="idv-sticker-label">المحافظة</span>
+          <span className="idv-sticker-value">{STICKER_FIELDS.governorate(order) || '—'}</span>
+        </div>
+        <div>
+          <span className="idv-sticker-label">العنوان</span>
+          <span className="idv-sticker-value">{STICKER_FIELDS.address(order) || '—'}</span>
+        </div>
       </div>
 
       <div className="idv-sticker-row idv-sticker-row-3">
@@ -148,6 +164,21 @@ function Sticker({ order }: { order: PrintOrder }) {
         <Barcode value={barcodeValue} />
       </div>
     </div>
+  );
+}
+
+async function waitForPrintImages() {
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const images = Array.from(document.querySelectorAll<HTMLImageElement>('#print-root img'));
+  await Promise.all(
+    images.map((img) => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      if (img.decode) return img.decode().catch(() => undefined);
+      return new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+      });
+    })
   );
 }
 
@@ -191,9 +222,9 @@ export default function PrintPage() {
   const triggerPrint = (toPrint: PrintOrder[]) => {
     if (toPrint.length === 0) return;
     setPrintQueue(toPrint);
-    // ponytail: defer to next frame so #print-root has the new children before
-    // the browser snapshots for printing. requestAnimationFrame is enough.
-    requestAnimationFrame(() => window.print());
+    // ponytail: print-root is mounted just-in-time; wait for the logo image so
+    // the browser doesn't snapshot the sticker before it decodes.
+    void waitForPrintImages().then(() => window.print());
   };
 
   const removeFromQueue = async (orderIds: string[]) => {
@@ -231,6 +262,40 @@ export default function PrintPage() {
       } else {
         await loadMerchants();
       }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ponytail: reuses the existing non-destructive POST /api/print/queue (sets
+  // printQueueRemovedAt) by first reading the merchant's pending order ids.
+  // No API change, no order deletion — queue-only dismissal, exactly like the
+  // per-row delete flow.
+  const removeMerchantFromQueue = async (merchant: PrintQueueMerchant) => {
+    if (!window.confirm('هل أنت متأكد من حذف طلبات هذا التاجر من قائمة الطباعة؟')) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      const res = await fetch(`/api/print/queue?merchantId=${encodeURIComponent(merchant.id)}`);
+      const data = await res.json();
+      const orderIds: string[] = (data.orders || []).map((o: PrintOrder) => o.orderId);
+      if (orderIds.length === 0) {
+        await loadMerchants();
+        setMessage('لا توجد طلبات لهذا التاجر في قائمة الطباعة.');
+        return;
+      }
+      const rmRes = await fetch('/api/print/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds }),
+      });
+      const rmData = await rmRes.json();
+      if (!rmRes.ok) {
+        setMessage(rmData.error || 'فشل الحذف من القائمة');
+        return;
+      }
+      setMessage(`تم حذف ${orderIds.length} طلب من قائمة الطباعة.`);
+      await loadMerchants();
     } finally {
       setBusy(false);
     }
@@ -316,16 +381,27 @@ export default function PrintPage() {
                         {m.orderCount} {m.orderCount === 1 ? 'طلب' : 'طلبات'} بانتظار الطباعة
                       </p>
                     </div>
-                    <button
-                      className="idv-button idv-button-light idv-button-small text-sm"
-                      onClick={() => {
-                        setActiveMerchant(m);
-                        void loadOrders(m.id);
-                      }}
-                      type="button"
-                    >
-                      فتح
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        className="idv-button idv-button-light idv-button-small text-sm"
+                        onClick={() => {
+                          setActiveMerchant(m);
+                          void loadOrders(m.id);
+                        }}
+                        type="button"
+                      >
+                        فتح
+                      </button>
+                      <button
+                        className="idv-button idv-button-light idv-button-small text-sm"
+                        disabled={busy}
+                        onClick={() => removeMerchantFromQueue(m)}
+                        type="button"
+                        style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                      >
+                        حذف
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

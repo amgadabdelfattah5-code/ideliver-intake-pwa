@@ -140,12 +140,20 @@ input:-webkit-autofill:focus {
 }
 
 .idv-sticker-brand {
+  align-items: center;
   border-bottom: 3px solid #000;
+  display: flex;
+  flex-direction: row;
   font-size: 18pt;
   font-weight: 900;
-  letter-spacing: 0.5pt;
+  gap: 6pt;
+  justify-content: center;
   padding-bottom: 4pt;
-  text-align: center;
+}
+
+.idv-sticker-logo {
+  height: 20pt;
+  width: auto;
 }
 
 .idv-sticker-row {
@@ -229,6 +237,13 @@ input:-webkit-autofill:focus {
     page-break-after: always;
   }
   #print-root .idv-sticker:last-child { page-break-after: auto; }
+
+  /* ponytail: force logo to render on monochrome printers and stay visible. */
+  .idv-sticker-logo {
+    filter: grayscale(1) contrast(1.15);
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
 
   @page {
     margin: 0;
