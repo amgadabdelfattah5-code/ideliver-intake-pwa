@@ -120,3 +120,118 @@ input:-webkit-autofill:focus {
   min-height: 2rem;
   padding: 0.35rem 0.85rem;
 }
+
+/* ============ Sticker (B/W printable) ============ */
+/* ponytail: size is a knob. Spec suggests 100mm x 150mm; change here for other label stock. */
+.idv-sticker {
+  --idv-sticker-w: 100mm;
+  --idv-sticker-h: 150mm;
+  background: #ffffff;
+  border: 2px solid #000;
+  box-sizing: border-box;
+  color: #000;
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  gap: 6pt;
+  padding: 6mm;
+  width: var(--idv-sticker-w);
+}
+
+.idv-sticker-brand {
+  border-bottom: 3px solid #000;
+  font-size: 18pt;
+  font-weight: 900;
+  letter-spacing: 0.5pt;
+  padding-bottom: 4pt;
+  text-align: center;
+}
+
+.idv-sticker-row {
+  display: grid;
+  gap: 4pt;
+}
+.idv-sticker-row-2 { grid-template-columns: 1fr 1fr; }
+.idv-sticker-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.idv-sticker-row > div {
+  border: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+  padding: 3pt 4pt;
+}
+
+.idv-sticker-label {
+  color: #000;
+  font-size: 8pt;
+  font-weight: 700;
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+
+.idv-sticker-value {
+  font-size: 11pt;
+  font-weight: 600;
+  word-break: break-word;
+}
+.idv-sticker-value-lg { font-size: 14pt; font-weight: 800; }
+.idv-sticker-value-bold { font-weight: 900; }
+.idv-sticker-value-mono { font-family: "Courier New", monospace; }
+
+.idv-sticker-section {
+  border: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+  gap: 2pt;
+  padding: 4pt;
+}
+
+.idv-sticker-section-title {
+  border-bottom: 1px solid #000;
+  font-size: 9pt;
+  font-weight: 800;
+  margin-bottom: 2pt;
+  text-transform: uppercase;
+}
+
+.idv-sticker-barcode {
+  align-items: center;
+  border-top: 2px solid #000;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 4pt;
+}
+
+.idv-barcode {
+  display: block;
+  height: 32mm;
+  width: 80mm;
+}
+
+/* ============ Print ============ */
+@media print {
+  /* ponytail: visibility (not display) keeps layout stable while masking non-sticker UI. */
+  body * { visibility: hidden !important; }
+  #print-root,
+  #print-root * { visibility: visible !important; }
+  #print-root {
+    display: block !important;
+    inset: 0;
+    position: absolute;
+  }
+  .no-print { display: none !important; }
+
+  /* Each sticker on its own page; one label per sheet. */
+  #print-root .idv-sticker {
+    border: 2px solid #000;
+    page-break-after: always;
+  }
+  #print-root .idv-sticker:last-child { page-break-after: auto; }
+
+  @page {
+    margin: 0;
+    size: 100mm 150mm;
+  }
+}

@@ -235,7 +235,7 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 py-6 md:grid-cols-[1fr_1fr]">
+      <section className="mx-auto grid max-w-6xl gap-4 px-4 py-6 md:grid-cols-[1fr_1fr_1fr]">
         {(user.role === 'admin' || user.role === 'pickup') && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">تدفّق الهاتف</p>
@@ -264,6 +264,22 @@ export default function Home() {
               href="/review"
             >
               فتح المراجعة
+            </Link>
+          </div>
+        )}
+
+        {(user.role === 'admin' || user.role === 'pickup' || user.role === 'data_entry') && (
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">تدفّق الطباعة</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">قائمة الطباعة</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              اطبع استيكرات الشحن للطلبات المُرسَلة مجمّعة حسب التاجر، أو احذفها من قائمة الطباعة.
+            </p>
+            <Link
+              className="idv-button mt-5 h-10 text-sm"
+              href="/print"
+            >
+              فتح الطباعة
             </Link>
           </div>
         )}

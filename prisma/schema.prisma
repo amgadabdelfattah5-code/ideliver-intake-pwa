@@ -49,11 +49,16 @@ model Order {
   submittedAt     DateTime?
   claimedBy       String?
   claimedAt       DateTime?
+  // ponytail: nullable exit flag for the print queue. Submitted orders with this
+  // null are pending print; setting it dismisses the order from the print window
+  // without deleting the order itself. Cheaper than a status enum change.
+  printQueueRemovedAt DateTime?
   extraction      Extraction?
   corrections     Correction[]
 
   @@unique([sessionId, sequence])
   @@index([sessionId, status])
+  @@index([status, printQueueRemovedAt])
 }
 
 model Extraction {
