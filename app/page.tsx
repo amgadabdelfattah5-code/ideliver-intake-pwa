@@ -7,7 +7,7 @@ interface StaffUser {
   wpUserId: number;
   username: string;
   email: string;
-  role: 'admin' | 'pickup' | 'data_entry';
+  role: 'admin' | 'pickup' | 'data_entry' | 'driver';
 }
 
 const REMEMBER_STORAGE_KEY = 'idv_remember';
@@ -280,6 +280,22 @@ export default function Home() {
               href="/print"
             >
               فتح الطباعة
+            </Link>
+          </div>
+        )}
+
+        {(user.role === 'admin' || user.role === 'driver') && (
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">تدفّق التوصيل</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">زيارات المندوبين</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              اطّلع على الطلبات المُسندة إليك، وثّق كل زيارة بصورة وسبب، ثم حدّث حالة الشحنة.
+            </p>
+            <Link
+              className="idv-button idv-button-orange mt-5 h-10 text-sm"
+              href="/driver"
+            >
+              فتح قائمة التوصيل
             </Link>
           </div>
         )}

@@ -94,6 +94,22 @@ model ActionLog {
   @@index([entity, entityId])
 }
 
+model DeliveryVisit {
+  id         String    @id @default(cuid())
+  shipmentId String
+  driverId   Int
+  driverName String
+  status     String
+  reasonCode String
+  note       String?
+  photoUrl   String?
+  createdAt  DateTime  @default(now())
+  syncedAt   DateTime?
+
+  @@index([shipmentId])
+  @@index([syncedAt])
+}
+
 enum SessionStatus {
   created
   awaiting_extraction

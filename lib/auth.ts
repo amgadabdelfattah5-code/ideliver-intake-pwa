@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { staffSessionCookieName, verifySessionToken } from './session';
 
-export type StaffRole = 'admin' | 'pickup' | 'data_entry';
+export type StaffRole = 'admin' | 'pickup' | 'data_entry' | 'driver';
 
 export interface StaffSession {
   wpUserId: number;
