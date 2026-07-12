@@ -209,17 +209,25 @@ export async function POST(req: NextRequest) {
     }
 
     if (synced) {
-      try {
-        await prisma.deliveryVisit.update({
-          where: { id: visit.id },
-          data: { syncedAt: new Date() },
-        });
-      } catch (bookkeepingError) {
-        console.error(
-          'driver visit synced to WP but local syncedAt update failed',
-          { visitId: visit.id, orderId },
-          bookkeepingError
-        );
+      // One retry — a Postgres write failing immediately after a successful WP push is
+      // almost always transient (connection blip), and leaving syncedAt null here would
+      // misrepresent an already-synced visit as pending in the DB, even though the API
+      // response (below) correctly tells the driver it worked.
+      let bookkeepingOk = false;
+      for (let attempt = 0; attempt < 2 && !bookkeepingOk; attempt++) {
+        try {
+          await prisma.deliveryVisit.update({
+            where: { id: visit.id },
+            data: { syncedAt: new Date() },
+          });
+          bookkeepingOk = true;
+        } catch (bookkeepingError) {
+          console.error(
+            'driver visit synced to WP but local syncedAt update failed',
+            { visitId: visit.id, orderId, attempt },
+            bookkeepingError
+          );
+        }
       }
     }
 
