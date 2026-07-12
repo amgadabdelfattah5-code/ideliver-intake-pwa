@@ -12,6 +12,8 @@ const reasons = [
   { value: 'postponed', label: 'تم التأجيل' },
 ];
 
+// Deliberately excludes financial/admin-only statuses (e.g. refunded) — matches the
+// WP-side STATUS_MAP; a delivery visit shouldn't be able to trigger a refund.
 const statuses = [
   { value: 'shipment-rec', label: 'استلام الشحنة' },
   { value: 'shipped', label: 'قيد التوصيل' },
@@ -19,7 +21,6 @@ const statuses = [
   { value: 'on-hold', label: 'قيد الانتظار' },
   { value: 'postponed', label: 'مؤجل' },
   { value: 'cancelled', label: 'ملغي' },
-  { value: 'refunded', label: 'مرتجع' },
   { value: 'failed', label: 'فشل التوصيل' },
 ];
 
@@ -39,6 +40,7 @@ export default function DriverVisitPage() {
   const [photoDataUrl, setPhotoDataUrl] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'sending'>('idle');
   const [message, setMessage] = useState('');
+  const [messageSynced, setMessageSynced] = useState(true);
   const [error, setError] = useState('');
 
   const selectPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +95,12 @@ export default function DriverVisitPage() {
         return;
       }
 
-      setMessage('تم تسجيل الزيارة بنجاح');
+      setMessageSynced(Boolean(data.synced));
+      setMessage(
+        data.synced
+          ? 'تم تسجيل الزيارة وتحديث حالة الشحنة بنجاح'
+          : 'تم حفظ الزيارة محلياً، لكن تحديث حالة الشحنة لم يتم بعد — سيُعاد المحاولة لاحقاً'
+      );
       setNote('');
       setPhotoDataUrl('');
     } catch {
@@ -201,7 +208,13 @@ export default function DriverVisitPage() {
           )}
 
           {message && (
-            <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+            <p
+              className={
+                messageSynced
+                  ? 'rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700'
+                  : 'rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800'
+              }
+            >
               {message}
             </p>
           )}

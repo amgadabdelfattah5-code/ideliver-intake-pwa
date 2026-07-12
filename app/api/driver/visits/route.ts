@@ -5,6 +5,8 @@ import { storePhoto } from '@/lib/photo-storage';
 import { prisma } from '@/lib/prisma';
 import { getDriverOrders, submitDeliveryVisit } from '@/lib/wp-client';
 
+// Deliberately excludes financial/admin-only statuses (e.g. refunded) — matches the
+// WP-side STATUS_MAP in class-liquidship-driver-api.php; keep the two in sync.
 const allowedStatuses = [
   'shipment-rec',
   'shipped',
@@ -12,7 +14,6 @@ const allowedStatuses = [
   'on-hold',
   'postponed',
   'cancelled',
-  'refunded',
   'failed',
 ];
 
@@ -27,6 +28,24 @@ const allowedReasons = [
 interface VisitPhoto {
   bytes: Buffer;
   contentType: string;
+}
+
+// Matches decoded bytes against the declared type's magic number — the regex above only
+// checks the data-URL label and base64 alphabet, not the actual file content. Mirrors the
+// getimagesizefromstring() check on the WP side; kept in sync with STATUS_MAP's sibling.
+function matchesImageSignature(bytes: Buffer, type: 'jpeg' | 'png' | 'webp'): boolean {
+  if (type === 'jpeg') {
+    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  }
+  if (type === 'png') {
+    const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    return bytes.length >= 8 && bytes.subarray(0, 8).equals(pngSignature);
+  }
+  return (
+    bytes.length >= 12 &&
+    bytes.subarray(0, 4).toString('ascii') === 'RIFF' &&
+    bytes.subarray(8, 12).toString('ascii') === 'WEBP'
+  );
 }
 
 function parsePhoto(dataUrl: unknown): VisitPhoto | null {
@@ -47,12 +66,26 @@ function parsePhoto(dataUrl: unknown): VisitPhoto | null {
     throw new Error('حجم الصورة أكبر من 8 ميجابايت');
   }
 
-  return { bytes, contentType: `image/${match[1]}` };
+  const type = match[1] as 'jpeg' | 'png' | 'webp';
+  if (!matchesImageSignature(bytes, type)) {
+    throw new Error('محتوى الصورة لا يطابق نوعها المعلن');
+  }
+
+  return { bytes, contentType: `image/${type}` };
 }
+
+// Base64 photo (8MB cap) inflates ~4/3 plus the rest of the JSON body — reject anything
+// clearly larger up front instead of buffering a huge request before validating it.
+const maxRequestBytes = 12 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   const session = await requireRole(['admin', 'driver']);
   if (session instanceof NextResponse) return session;
+
+  const contentLength = Number(req.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > maxRequestBytes) {
+    return NextResponse.json({ error: 'حجم الطلب أكبر من المسموح' }, { status: 413 });
+  }
 
   let body: Record<string, unknown>;
   try {
@@ -119,9 +152,15 @@ export async function POST(req: NextRequest) {
         bytes: photo.bytes,
         contentType: photo.contentType,
       });
+      // storePhoto() is shared with the Order capture flow and always builds file-mode
+      // URLs as /api/photos/:id, which only looks up Order — rewrite to the
+      // DeliveryVisit-specific route so file mode doesn't 404 on visit photos.
+      const photoUrl = storedPhoto.photoUrl.startsWith('/api/photos/')
+        ? `/api/driver/visits/${visit.id}/photo`
+        : storedPhoto.photoUrl;
       visit = await prisma.deliveryVisit.update({
         where: { id: visit.id },
-        data: { photoUrl: storedPhoto.photoUrl },
+        data: { photoUrl },
       });
     }
 
@@ -158,8 +197,10 @@ export async function POST(req: NextRequest) {
         data: { syncedAt: new Date() },
       });
       synced = true;
-    } catch {
-      // Local visit and audit rows are the fallback; syncedAt stays null.
+    } catch (syncError) {
+      // Local visit and audit rows are the fallback; syncedAt stays null. Log so a
+      // pending-sync backlog is actually discoverable instead of silently accumulating.
+      console.error('driver visit WP sync failed', { visitId: visit.id, orderId }, syncError);
     }
 
     return NextResponse.json({ success: true, synced });
