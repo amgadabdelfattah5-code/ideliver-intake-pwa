@@ -35,6 +35,15 @@ const localAccounts: LocalPwaAccount[] = [
     salt: 'e9964a4d313c9d5dd198e4b8166177b0',
     passwordHash: '8814659f1249b8da25ea301df95ebc40bbdc8ab37d8405aba8af2d4ff8c631f9',
   },
+  {
+    username: 'testdrive',
+    displayName: 'Test Driver',
+    email: 'testdrive@ideliver.local',
+    role: 'driver',
+    wpUserId: -201,
+    salt: '2521701e5dcd1258bc5d0c285c8845de',
+    passwordHash: '794f3ddd76db49eb1cc2e359b1eab3c10257cfef91249a321909d38fef54d2f7',
+  },
 ];
 
 function verifyPassword(password: string, account: LocalPwaAccount): boolean {
