@@ -75,7 +75,8 @@ export async function POST(req: NextRequest) {
     orderId <= 0 ||
     !allowedStatuses.includes(status) ||
     !allowedReasons.includes(reasonCode) ||
-    (note !== undefined && typeof note !== 'string')
+    (note !== undefined && typeof note !== 'string') ||
+    (typeof note === 'string' && note.length > 2000)
   ) {
     return NextResponse.json({ error: 'بيانات الطلب غير صحيحة' }, { status: 400 });
   }
@@ -163,12 +164,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, synced });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: 'تعذّر تسجيل الزيارة',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 }
-    );
+    // Log internally; don't leak Prisma/filesystem error details to the client.
+    console.error('driver visit failed', error);
+    return NextResponse.json({ error: 'تعذّر تسجيل الزيارة' }, { status: 500 });
   }
 }

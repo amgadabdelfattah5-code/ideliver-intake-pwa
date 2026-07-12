@@ -13,12 +13,7 @@ export async function GET() {
     );
     return NextResponse.json({ orders });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: 'تعذّر تحميل قائمة الطلبات',
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 }
-    );
+    console.error('driver orders load failed', error);
+    return NextResponse.json({ error: 'تعذّر تحميل قائمة الطلبات' }, { status: 500 });
   }
 }
