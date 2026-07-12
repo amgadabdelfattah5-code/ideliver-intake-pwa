@@ -82,8 +82,13 @@ export async function POST(req: NextRequest) {
   const session = await requireRole(['admin', 'driver']);
   if (session instanceof NextResponse) return session;
 
-  const contentLength = Number(req.headers.get('content-length'));
-  if (Number.isFinite(contentLength) && contentLength > maxRequestBytes) {
+  // Require Content-Length rather than only checking it when present — Number(null) is 0,
+  // not NaN, so a missing header (e.g. chunked transfer-encoding) previously bypassed this
+  // check entirely. A real browser fetch() with a JSON.stringify body always sends
+  // Content-Length, so requiring it doesn't break legitimate driver submissions.
+  const contentLengthHeader = req.headers.get('content-length');
+  const contentLength = contentLengthHeader === null ? NaN : Number(contentLengthHeader);
+  if (!Number.isFinite(contentLength) || contentLength > maxRequestBytes) {
     return NextResponse.json({ error: 'حجم الطلب أكبر من المسموح' }, { status: 413 });
   }
 
@@ -181,6 +186,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // WP push and the local syncedAt bookkeeping are two independent failure points —
+    // if the WP call succeeds but the follow-up Prisma update fails, that must not be
+    // reported as synced:false (WooCommerce genuinely was updated; only our local
+    // "it happened" marker failed to write).
     let synced = false;
     try {
       await submitDeliveryVisit({
@@ -192,15 +201,26 @@ export async function POST(req: NextRequest) {
         photoDataUrl:
           typeof body.photoDataUrl === 'string' ? body.photoDataUrl : undefined,
       });
-      await prisma.deliveryVisit.update({
-        where: { id: visit.id },
-        data: { syncedAt: new Date() },
-      });
       synced = true;
     } catch (syncError) {
       // Local visit and audit rows are the fallback; syncedAt stays null. Log so a
       // pending-sync backlog is actually discoverable instead of silently accumulating.
       console.error('driver visit WP sync failed', { visitId: visit.id, orderId }, syncError);
+    }
+
+    if (synced) {
+      try {
+        await prisma.deliveryVisit.update({
+          where: { id: visit.id },
+          data: { syncedAt: new Date() },
+        });
+      } catch (bookkeepingError) {
+        console.error(
+          'driver visit synced to WP but local syncedAt update failed',
+          { visitId: visit.id, orderId },
+          bookkeepingError
+        );
+      }
     }
 
     return NextResponse.json({ success: true, synced });

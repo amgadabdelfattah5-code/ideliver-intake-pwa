@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { requireAuth } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 import { readStoredPhoto } from '@/lib/photo-storage';
 import { prisma } from '@/lib/prisma';
 
@@ -11,18 +11,24 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await requireAuth();
+  // requireRole, not requireAuth — these are doorstep/delivery photos, not shared
+  // merchant-intake receipts, so a driver should only ever see their own visit photos.
+  const session = await requireRole(['admin', 'driver']);
   if (session instanceof NextResponse) return session;
 
   const { id } = await params;
 
   const visit = await prisma.deliveryVisit.findUnique({
     where: { id },
-    select: { id: true, photoUrl: true },
+    select: { id: true, photoUrl: true, driverId: true },
   });
 
   if (!visit || !visit.photoUrl) {
     return NextResponse.json({ error: 'Photo not found' }, { status: 404 });
+  }
+
+  if (session.role === 'driver' && visit.driverId !== session.wpUserId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   if (visit.photoUrl.startsWith('data:')) {
