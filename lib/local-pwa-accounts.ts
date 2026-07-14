@@ -21,7 +21,7 @@ const localAccounts: LocalPwaAccount[] = [
     username: 'hamoo',
     displayName: 'Hamoo',
     email: 'hamoo@ideliver.local',
-    role: 'pickup',
+    role: 'admin',
     wpUserId: -101,
     salt: 'a7769eff749be57495c380e12d9045d2',
     passwordHash: 'ff2552f7728516efc9f1fe319f9e0f901c05af72b19fd2fe9750df5080d996de',
