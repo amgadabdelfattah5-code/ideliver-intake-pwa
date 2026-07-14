@@ -30,15 +30,35 @@ interface OrderDetails {
 
 const dataEntryFields: Array<[keyof DataEntry, string]> = [
   ['recipientName', 'اسم المستلم'],
-  ['recipientPhone', 'رقم الهاتف'],
   ['recipientAddress', 'العنوان'],
   ['recipientGovernorate', 'المحافظة'],
+  ['recipientPhone', 'رقم الهاتف'],
   ['product', 'المنتج'],
   ['price', 'سعر المنتج'],
   ['shippingFeePrinted', 'مصاريف الشحن'],
   ['total', 'الإجمالي'],
   ['notes', 'ملاحظات'],
 ];
+
+function driverFieldClass(key: string): string {
+  switch (key) {
+    case 'recipientName':
+    case 'recipientPhone':
+    case 'recipientGovernorate':
+    case 'product':
+      return 'block md:col-span-4';
+    case 'price':
+    case 'shippingFeePrinted':
+    case 'total':
+      return 'block md:col-span-3';
+    case 'recipientAddress':
+      return 'block md:col-span-17';
+    case 'notes':
+      return 'block md:col-span-8';
+    default:
+      return 'block md:col-span-4';
+  }
+}
 
 const reasons = [
   { value: 'delivered', label: 'تم التوصيل' },
@@ -218,11 +238,11 @@ export default function DriverVisitPage() {
               </dl>
 
               {orderDetails.dataEntry ? (
-                <dl className='divide-y divide-slate-100 rounded-md border border-slate-200'>
+                <dl className='grid gap-2 md:grid-cols-[repeat(25,minmax(0,1fr))]'>
                   {dataEntryFields.map(([key, label]) => (
-                    <div className='grid gap-1 px-3 py-2 sm:grid-cols-[10rem_1fr]' key={key}>
-                      <dt className='text-sm font-bold text-slate-600'>{label}</dt>
-                      <dd className='whitespace-pre-wrap break-words text-sm text-slate-800'>
+                    <div className={driverFieldClass(key)} key={key}>
+                      <dt className='text-xs font-bold text-slate-500'>{label}</dt>
+                      <dd className='mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800'>
                         {orderDetails.dataEntry?.[key] || '—'}
                       </dd>
                     </div>
