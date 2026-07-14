@@ -1,8 +1,44 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+
+interface DriverOrder {
+  orderId: number;
+  tracking: string;
+  status: string;
+  merchantName: string;
+}
+
+interface DataEntry {
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  recipientGovernorate: string;
+  product: string;
+  price: string;
+  shippingFeePrinted: string;
+  total: string;
+  notes: string;
+}
+
+interface OrderDetails {
+  order: DriverOrder;
+  dataEntry: DataEntry | null;
+}
+
+const dataEntryFields: Array<[keyof DataEntry, string]> = [
+  ['recipientName', 'اسم المستلم'],
+  ['recipientPhone', 'رقم الهاتف'],
+  ['recipientAddress', 'العنوان'],
+  ['recipientGovernorate', 'المحافظة'],
+  ['product', 'المنتج'],
+  ['price', 'سعر المنتج'],
+  ['shippingFeePrinted', 'مصاريف الشحن'],
+  ['total', 'الإجمالي'],
+  ['notes', 'ملاحظات'],
+];
 
 const reasons = [
   { value: 'delivered', label: 'تم التوصيل' },
@@ -35,6 +71,9 @@ function fileToDataUrl(file: File): Promise<string> {
 
 export default function DriverVisitPage() {
   const { orderId } = useParams<{ orderId: string }>();
+  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(true);
+  const [detailsError, setDetailsError] = useState('');
   const [reasonCode, setReasonCode] = useState('');
   const [note, setNote] = useState('');
   const [photoDataUrl, setPhotoDataUrl] = useState('');
@@ -42,6 +81,21 @@ export default function DriverVisitPage() {
   const [message, setMessage] = useState('');
   const [messageSynced, setMessageSynced] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch(`/api/driver/orders/${encodeURIComponent(orderId)}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'تعذّر تحميل بيانات الطلب');
+        setOrderDetails(data);
+      })
+      .catch((loadError) => {
+        setDetailsError(
+          loadError instanceof Error ? loadError.message : 'تعذّر تحميل بيانات الطلب'
+        );
+      })
+      .finally(() => setDetailsLoading(false));
+  }, [orderId]);
 
   const selectPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -126,6 +180,63 @@ export default function DriverVisitPage() {
           </Link>
         </div>
       </header>
+      <section className='mx-auto max-w-3xl px-4 pt-6'>
+        <div className='rounded-lg border border-slate-200 bg-white p-5 shadow-sm'>
+          <h2 className='text-lg font-bold'>بيانات الطلب</h2>
+
+          {detailsLoading && (
+            <p className='mt-3 text-sm font-medium text-slate-600'>جاري تحميل بيانات الطلب...</p>
+          )}
+
+          {detailsError && (
+            <p className='mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700'>
+              {detailsError}
+            </p>
+          )}
+
+          {orderDetails && (
+            <div className='mt-4 space-y-4'>
+              <dl className='grid gap-3 sm:grid-cols-3'>
+                <div className='rounded-md bg-slate-50 p-3'>
+                  <dt className='text-xs font-bold text-slate-500'>رقم التتبع</dt>
+                  <dd className='mt-1 break-words text-sm font-semibold'>
+                    {orderDetails.order.tracking || '—'}
+                  </dd>
+                </div>
+                <div className='rounded-md bg-slate-50 p-3'>
+                  <dt className='text-xs font-bold text-slate-500'>الحالة</dt>
+                  <dd className='mt-1 break-words text-sm font-semibold'>
+                    {orderDetails.order.status || '—'}
+                  </dd>
+                </div>
+                <div className='rounded-md bg-slate-50 p-3'>
+                  <dt className='text-xs font-bold text-slate-500'>التاجر</dt>
+                  <dd className='mt-1 break-words text-sm font-semibold'>
+                    {orderDetails.order.merchantName || '—'}
+                  </dd>
+                </div>
+              </dl>
+
+              {orderDetails.dataEntry ? (
+                <dl className='divide-y divide-slate-100 rounded-md border border-slate-200'>
+                  {dataEntryFields.map(([key, label]) => (
+                    <div className='grid gap-1 px-3 py-2 sm:grid-cols-[10rem_1fr]' key={key}>
+                      <dt className='text-sm font-bold text-slate-600'>{label}</dt>
+                      <dd className='whitespace-pre-wrap break-words text-sm text-slate-800'>
+                        {orderDetails.dataEntry?.[key] || '—'}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className='text-sm font-medium text-slate-600'>
+                  لا توجد بيانات إدخال بيانات لهذا الطلب
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="mx-auto max-w-3xl px-4 py-6">
         <div className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
