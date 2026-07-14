@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/auth';
 import { getDriverOrders } from '@/lib/wp-client';
 
 export async function GET() {
-  const session = await requireRole(['admin', 'driver']);
+  const session = await requireRole(['admin', 'data_entry', 'driver']);
   if (session instanceof NextResponse) return session;
 
   try {

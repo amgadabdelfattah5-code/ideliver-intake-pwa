@@ -73,6 +73,15 @@ export async function POST(req: Request) {
     const email = wpUser.email || username;
     const displayName = wpUser.name || wpUser.slug || username;
     const wpRoles: string[] = Array.isArray(wpUser.roles) ? wpUser.roles : [];
+    const staffRoles = ['administrator', 'shop_manager', 'editor', 'liquidship_manager'];
+    const isStaff = wpRoles.some((wpRole) => staffRoles.includes(wpRole));
+    if (!isStaff) {
+      recordFailedLogin(ip, username);
+      return NextResponse.json(
+        { error: 'هذا الحساب لا يملك صلاحية الوصول' },
+        { status: 403 }
+      );
+    }
     const role = wpRoles.includes('administrator') ? 'admin' : 'data_entry';
     const token = createSessionToken({
       wpUserId: wpUser.id,

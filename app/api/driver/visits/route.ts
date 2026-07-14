@@ -79,7 +79,7 @@ function parsePhoto(dataUrl: unknown): VisitPhoto | null {
 const maxRequestBytes = 12 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
-  const session = await requireRole(['admin', 'driver']);
+  const session = await requireRole(['admin', 'data_entry', 'driver']);
   if (session instanceof NextResponse) return session;
 
   // Require Content-Length rather than only checking it when present — Number(null) is 0,
@@ -130,21 +130,32 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    if (session.role === 'driver') {
-      const assignedOrders = await getDriverOrders(session.wpUserId);
-      if (!assignedOrders.some((order) => order.orderId === orderId)) {
-        return NextResponse.json(
-          { error: 'هذا الطلب غير مُسند إليك' },
-          { status: 403 }
-        );
-      }
+    const allAssignedOrders = await getDriverOrders(
+      session.role === 'driver' ? session.wpUserId : undefined
+    );
+    const matchedOrder = allAssignedOrders.find((order) => order.orderId === orderId);
+
+    if (
+      !matchedOrder ||
+      !Number.isInteger(matchedOrder.assignedDriverId) ||
+      matchedOrder.assignedDriverId === 0
+    ) {
+      return NextResponse.json(
+        { error: 'هذا الطلب غير مُسند لأي مندوب' },
+        { status: 403 }
+      );
     }
+
+    const effectiveDriverId = matchedOrder.assignedDriverId;
 
     let visit = await prisma.deliveryVisit.create({
       data: {
         shipmentId: String(orderId),
-        driverId: session.wpUserId,
-        driverName: session.username,
+        driverId: effectiveDriverId,
+        driverName:
+          session.role === 'driver'
+            ? session.username
+            : `${session.username} (نيابة عن السائق)`,
         status,
         reasonCode,
         note,
@@ -178,6 +189,7 @@ export async function POST(req: NextRequest) {
         meta: {
           visitId: visit.id,
           driverId: session.wpUserId,
+          ...(effectiveDriverId !== session.wpUserId ? { effectiveDriverId } : {}),
           status,
           reasonCode,
           note,
@@ -194,7 +206,7 @@ export async function POST(req: NextRequest) {
     try {
       await submitDeliveryVisit({
         orderId,
-        driverId: session.wpUserId,
+        driverId: effectiveDriverId,
         status,
         reasonCode,
         note,

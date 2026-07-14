@@ -66,6 +66,9 @@ export interface WPDriverOrder {
   customerPhone: string;
   address: string;
   total: string;
+  merchantWpUserId: number;
+  merchantName: string;
+  assignedDriverId: number;
 }
 
 export async function getDriverOrders(driverId?: number): Promise<WPDriverOrder[]> {

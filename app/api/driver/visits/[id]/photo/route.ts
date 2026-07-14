@@ -13,7 +13,7 @@ export async function GET(
 ) {
   // requireRole, not requireAuth — these are doorstep/delivery photos, not shared
   // merchant-intake receipts, so a driver should only ever see their own visit photos.
-  const session = await requireRole(['admin', 'driver']);
+  const session = await requireRole(['admin', 'data_entry', 'driver']);
   if (session instanceof NextResponse) return session;
 
   const { id } = await params;

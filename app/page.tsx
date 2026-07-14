@@ -284,7 +284,7 @@ export default function Home() {
           </div>
         )}
 
-        {(user.role === 'admin' || user.role === 'driver') && (
+        {(user.role === 'admin' || user.role === 'data_entry' || user.role === 'driver') && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">تدفّق التوصيل</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">زيارات المندوبين</h2>
