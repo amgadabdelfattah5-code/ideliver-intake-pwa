@@ -103,6 +103,9 @@ model DeliveryVisit {
   reasonCode String
   note       String?
   photoUrl   String?
+  collectedPrice       String?
+  collectedShippingFee String?
+  collectedTotal       String?
   createdAt  DateTime  @default(now())
   syncedAt   DateTime?
 

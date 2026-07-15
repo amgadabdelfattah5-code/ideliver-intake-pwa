@@ -97,6 +97,7 @@ export interface DeliveryVisitPayload {
   reasonCode: string;
   note?: string;
   photoDataUrl?: string;
+  collectedValue?: string;
 }
 
 export async function submitDeliveryVisit(payload: DeliveryVisitPayload): Promise<void> {
@@ -116,6 +117,7 @@ export async function submitDeliveryVisit(payload: DeliveryVisitPayload): Promis
       reason_code: payload.reasonCode,
       note: payload.note,
       photo: payload.photoDataUrl,
+      collected_value: payload.collectedValue,
     }),
   });
 

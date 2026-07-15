@@ -30,14 +30,13 @@ interface OrderDetails {
 
 const dataEntryFields: Array<[keyof DataEntry, string]> = [
   ['recipientName', 'اسم المستلم'],
+  ['recipientPhone', 'رقم الهاتف'],
   ['recipientAddress', 'العنوان'],
   ['recipientGovernorate', 'المحافظة'],
-  ['recipientPhone', 'رقم الهاتف'],
   ['product', 'المنتج'],
   ['price', 'سعر المنتج'],
   ['shippingFeePrinted', 'مصاريف الشحن'],
   ['total', 'الإجمالي'],
-  ['notes', 'ملاحظات'],
 ];
 
 function driverFieldClass(key: string): string {
@@ -45,19 +44,42 @@ function driverFieldClass(key: string): string {
     case 'recipientName':
     case 'recipientPhone':
     case 'recipientGovernorate':
-    case 'product':
       return 'block md:col-span-4';
+    case 'product':
+      return 'block md:col-span-4 md:col-start-1';
     case 'price':
     case 'shippingFeePrinted':
     case 'total':
       return 'block md:col-span-3';
     case 'recipientAddress':
-      return 'block md:col-span-17';
+      return 'block md:col-span-17 md:col-start-1';
     case 'notes':
       return 'block md:col-span-8';
     default:
       return 'block md:col-span-4';
   }
+}
+
+function moneyValue(value: string | undefined): number {
+  const normalized = Number((value || '').replace(/[^\d.]/g, ''));
+  return Number.isFinite(normalized) ? normalized : 0;
+}
+
+function formatMoneyValue(value: number): string {
+  return value > 0 ? value.toLocaleString('en-US') : '';
+}
+
+function calculateTotal(price: string | undefined, shippingFee: string | undefined): string {
+  return formatMoneyValue(moneyValue(price) + moneyValue(shippingFee));
+}
+
+function calculatePrice(total: string | undefined, shippingFee: string | undefined): string {
+  return formatMoneyValue(Math.max(moneyValue(total) - moneyValue(shippingFee), 0));
+}
+
+function formatMoneyInput(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  return digits ? Number(digits).toLocaleString('en-US') : '';
 }
 
 const reasons = [
@@ -101,6 +123,19 @@ export default function DriverVisitPage() {
   const [message, setMessage] = useState('');
   const [messageSynced, setMessageSynced] = useState(true);
   const [error, setError] = useState('');
+  const [collectedPrice, setCollectedPrice] = useState('');
+  const [collectedShippingFee, setCollectedShippingFee] = useState('');
+  const [collectedTotal, setCollectedTotal] = useState('');
+  const [collectedPricingMode, setCollectedPricingMode] = useState<'sum' | 'fromTotal'>('sum');
+  const [collectedFieldsForOrderId, setCollectedFieldsForOrderId] = useState<string | null>(null);
+
+  if (orderDetails?.dataEntry && collectedFieldsForOrderId !== orderId) {
+    setCollectedFieldsForOrderId(orderId);
+    setCollectedPrice(orderDetails.dataEntry.price);
+    setCollectedShippingFee(orderDetails.dataEntry.shippingFeePrinted);
+    setCollectedTotal(orderDetails.dataEntry.total);
+    setCollectedPricingMode('sum');
+  }
 
   useEffect(() => {
     fetch(`/api/driver/orders/${encodeURIComponent(orderId)}`)
@@ -160,6 +195,9 @@ export default function DriverVisitPage() {
           reasonCode,
           note: note || undefined,
           photoDataUrl: photoDataUrl || undefined,
+          collectedPrice: orderDetails?.dataEntry ? collectedPrice : undefined,
+          collectedShippingFee: orderDetails?.dataEntry ? collectedShippingFee : undefined,
+          collectedTotal: orderDetails?.dataEntry ? collectedTotal : undefined,
         }),
       });
       const data = await response.json();
@@ -238,15 +276,88 @@ export default function DriverVisitPage() {
               </dl>
 
               {orderDetails.dataEntry ? (
-                <dl className='grid gap-2 md:grid-cols-[repeat(25,minmax(0,1fr))]'>
+                <dl className="grid gap-2 md:grid-cols-[repeat(25,minmax(0,1fr))]">
+                  {/* 1. existing read-only fields (name → total), unchanged rendering */}
                   {dataEntryFields.map(([key, label]) => (
                     <div className={driverFieldClass(key)} key={key}>
-                      <dt className='text-xs font-bold text-slate-500'>{label}</dt>
-                      <dd className='mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800'>
+                      <dt className="text-xs font-bold text-slate-500">{label}</dt>
+                      <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800">
                         {orderDetails.dataEntry?.[key] || '—'}
                       </dd>
                     </div>
                   ))}
+
+                  {/* 2. three new editable inputs, same column-span sizing as price/shippingFeePrinted/total.
+                        Each wraps its <input> in a <dd> (keeps valid dl/dt/dd structure — a bare
+                        <dt> followed by <input> with no <dd> was flagged in spec review as breaking
+                        the dl/dt/dd semantics this file's read-only fields already establish), and
+                        each <input> carries an explicit id + aria-labelledby pairing with its <dt>
+                        so the visual label is also the accessible label, not merely adjacent text. */}
+                  <div className="block md:col-span-3">
+                    <dt className="text-xs font-bold text-slate-500" id="collected-price-label">سعر المنتج المحصل</dt>
+                    <dd className="mt-1">
+                      <input
+                        aria-labelledby="collected-price-label"
+                        className="h-9 w-full rounded-md border border-amber-300 bg-amber-50 px-2 text-sm font-semibold text-slate-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30"
+                        id="collected-price"
+                        inputMode="numeric"
+                        onChange={(event) => {
+                          const value = formatMoneyInput(event.target.value);
+                          setCollectedPricingMode('sum');
+                          setCollectedPrice(value);
+                          setCollectedTotal(calculateTotal(value, collectedShippingFee));
+                        }}
+                        value={collectedPrice}
+                      />
+                    </dd>
+                  </div>
+                  <div className="block md:col-span-3">
+                    <dt className="text-xs font-bold text-slate-500" id="collected-shipping-label">مصاريف الشحن المحصلة</dt>
+                    <dd className="mt-1">
+                      <input
+                        aria-labelledby="collected-shipping-label"
+                        className="h-9 w-full rounded-md border border-amber-300 bg-amber-50 px-2 text-sm font-semibold text-slate-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30"
+                        id="collected-shipping"
+                        inputMode="numeric"
+                        onChange={(event) => {
+                          const value = formatMoneyInput(event.target.value);
+                          setCollectedShippingFee(value);
+                          if (collectedPricingMode === 'fromTotal') {
+                            setCollectedPrice(calculatePrice(collectedTotal, value));
+                          } else {
+                            setCollectedTotal(calculateTotal(collectedPrice, value));
+                          }
+                        }}
+                        value={collectedShippingFee}
+                      />
+                    </dd>
+                  </div>
+                  <div className="block md:col-span-3">
+                    <dt className="text-xs font-bold text-slate-500" id="collected-total-label">الإجمالي المحصل</dt>
+                    <dd className="mt-1">
+                      <input
+                        aria-labelledby="collected-total-label"
+                        className="h-9 w-full rounded-md border border-amber-300 bg-amber-50 px-2 text-sm font-semibold text-slate-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30"
+                        id="collected-total"
+                        inputMode="numeric"
+                        onChange={(event) => {
+                          const value = formatMoneyInput(event.target.value);
+                          setCollectedPricingMode('fromTotal');
+                          setCollectedTotal(value);
+                          setCollectedPrice(calculatePrice(value, collectedShippingFee));
+                        }}
+                        value={collectedTotal}
+                      />
+                    </dd>
+                  </div>
+
+                  {/* 3. notes — was part of the old dataEntryFields map, now its own explicit block */}
+                  <div className={driverFieldClass('notes')}>
+                    <dt className="text-xs font-bold text-slate-500">ملاحظات</dt>
+                    <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800">
+                      {orderDetails.dataEntry?.notes || '—'}
+                    </dd>
+                  </div>
                 </dl>
               ) : (
                 <p className='text-sm font-medium text-slate-600'>

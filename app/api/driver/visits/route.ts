@@ -74,6 +74,34 @@ function parsePhoto(dataUrl: unknown): VisitPhoto | null {
   return { bytes, contentType: `image/${type}` };
 }
 
+function parseMoneyOrUndefined(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value !== 'string') throw new Error('invalid_money_field');
+
+  // Treat a blank string as an explicit zero rather than invalid — see the
+  // note below on why the ported /review math can legitimately produce an
+  // empty field for a valid zero-value case.
+  const candidate = value === '' ? '0' : value;
+
+  // Either comma-grouped in valid thousands positions ("1,000", "1,000,000")
+  // or plain digits with no commas at all ("1000") — anchored, so anything
+  // else (negative sign, scientific notation, malformed grouping like
+  // "1,,000" or "10,00", letters) is rejected outright, not silently
+  // stripped and re-parsed.
+  if (!/^(?:\d{1,3}(?:,\d{3})*|\d+)(\.\d+)?$/.test(candidate)) {
+    throw new Error('invalid_money_field');
+  }
+
+  const withoutCommas = candidate.replace(/,/g, '');
+  const normalized = Number(withoutCommas);
+  if (!Number.isFinite(normalized) || normalized < 0) {
+    throw new Error('invalid_money_field');
+  }
+  return withoutCommas; // canonical, comma-free — this exact value is what
+                         // gets stored locally AND forwarded to WP; no
+                         // second normalization step anywhere downstream.
+}
+
 // Base64 photo (8MB cap) inflates ~4/3 plus the rest of the JSON body — reject anything
 // clearly larger up front instead of buffering a huge request before validating it.
 const maxRequestBytes = 12 * 1024 * 1024;
@@ -129,6 +157,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let collectedPrice: string | undefined;
+  let collectedShippingFee: string | undefined;
+  let collectedTotal: string | undefined;
+  try {
+    collectedPrice = parseMoneyOrUndefined(body.collectedPrice);
+    collectedShippingFee = parseMoneyOrUndefined(body.collectedShippingFee);
+    collectedTotal = parseMoneyOrUndefined(body.collectedTotal);
+  } catch {
+    return NextResponse.json({ error: 'بيانات الطلب غير صحيحة' }, { status: 400 });
+  }
+
   try {
     const allAssignedOrders = await getDriverOrders(
       session.role === 'driver' ? session.wpUserId : undefined
@@ -159,6 +198,9 @@ export async function POST(req: NextRequest) {
         status,
         reasonCode,
         note,
+        collectedPrice,
+        collectedShippingFee,
+        collectedTotal,
       },
     });
 
@@ -194,6 +236,7 @@ export async function POST(req: NextRequest) {
           reasonCode,
           note,
           hasPhoto: photo !== null,
+          ...(collectedTotal !== undefined ? { collectedTotal } : {}),
         },
       },
     });
@@ -212,6 +255,7 @@ export async function POST(req: NextRequest) {
         note,
         photoDataUrl:
           typeof body.photoDataUrl === 'string' ? body.photoDataUrl : undefined,
+        collectedValue: collectedTotal,
       });
       synced = true;
     } catch (syncError) {
