@@ -48,6 +48,9 @@ const fieldSizing: Record<string, { minWidth: string; grow: number }> = {
   price: { minWidth: '110px', grow: 1 },
   shippingFeePrinted: { minWidth: '110px', grow: 1 },
   total: { minWidth: '110px', grow: 1 },
+  merchantName: { minWidth: '120px', grow: 1 },
+  notes: { minWidth: '180px', grow: 3 },
+  status: { minWidth: '90px', grow: 1 },
 };
 
 function moneyValue(value: string | undefined): number {
@@ -218,7 +221,7 @@ export default function DriverVisitPage() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <div>
             <p className="text-sm font-semibold text-[#F27321]">iDeliver Egypt</p>
-            <h1 className="text-xl font-bold">توثيق الزيارة #{orderId}</h1>
+            <h1 className="text-xl font-bold">أوردر #{orderId}</h1>
           </div>
           <Link
             className="idv-button idv-button-light idv-button-small text-sm"
@@ -244,27 +247,6 @@ export default function DriverVisitPage() {
 
           {orderDetails && (
             <div className='mt-4 space-y-4'>
-              <dl className='grid gap-3 sm:grid-cols-3'>
-                <div className='rounded-md border border-slate-200 bg-slate-50 p-3'>
-                  <dt className='text-xs font-bold text-slate-500'>رقم التتبع</dt>
-                  <dd className='mt-1 break-words text-sm font-semibold'>
-                    {orderDetails.order.tracking || '—'}
-                  </dd>
-                </div>
-                <div className='rounded-md border border-slate-200 bg-slate-50 p-3'>
-                  <dt className='text-xs font-bold text-slate-500'>الحالة</dt>
-                  <dd className='mt-1 break-words text-sm font-semibold'>
-                    {orderDetails.order.status || '—'}
-                  </dd>
-                </div>
-                <div className='rounded-md border border-slate-200 bg-slate-50 p-3'>
-                  <dt className='text-xs font-bold text-slate-500'>التاجر</dt>
-                  <dd className='mt-1 break-words text-sm font-semibold'>
-                    {orderDetails.order.merchantName || '—'}
-                  </dd>
-                </div>
-              </dl>
-
               {orderDetails.dataEntry ? (
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-3">
@@ -281,21 +263,6 @@ export default function DriverVisitPage() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex flex-wrap gap-3">
-                    {dataEntryFields.slice(4, 5).map(([key, label]) => (
-                      <div
-                        className="rounded-md border border-slate-200 bg-slate-50 p-3"
-                        key={key}
-                        style={{ minWidth: fieldSizing[key]?.minWidth ?? '110px', flexGrow: fieldSizing[key]?.grow ?? 1, flexShrink: 1, flexBasis: 0 }}
-                      >
-                        <dt className="text-xs font-bold text-slate-500">{label}</dt>
-                        <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
-                          {orderDetails.dataEntry?.[key] || '—'}
-                        </dd>
-                      </div>
-                    ))}
-                  </div>
-
                   <div className="flex flex-wrap gap-3">
                     {dataEntryFields.slice(5).map(([key, label]) => (
                       <div
@@ -379,19 +346,50 @@ export default function DriverVisitPage() {
                       </dd>
                     </div>
                   </div>
-
-                  <div className="w-full rounded-md border border-slate-200 bg-slate-50 p-3">
-                    <dt className="text-xs font-bold text-slate-500">ملاحظات</dt>
-                    <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800">
-                      {orderDetails.dataEntry?.notes || '—'}
-                    </dd>
-                  </div>
                 </div>
               ) : (
                 <p className='text-sm font-medium text-slate-600'>
                   لا توجد بيانات إدخال بيانات لهذا الطلب
                 </p>
               )}
+              <div className="flex flex-wrap gap-3">
+                <div
+                  className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                  style={{ minWidth: fieldSizing.product.minWidth, flexGrow: fieldSizing.product.grow, flexShrink: 1, flexBasis: 0 }}
+                >
+                  <dt className="text-xs font-bold text-slate-500">المنتج</dt>
+                  <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                    {orderDetails.dataEntry?.product || '—'}
+                  </dd>
+                </div>
+                <div
+                  className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                  style={{ minWidth: fieldSizing.merchantName.minWidth, flexGrow: fieldSizing.merchantName.grow, flexShrink: 1, flexBasis: 0 }}
+                >
+                  <dt className="text-xs font-bold text-slate-500">التاجر</dt>
+                  <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                    {orderDetails.order.merchantName || '—'}
+                  </dd>
+                </div>
+                <div
+                  className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                  style={{ minWidth: fieldSizing.notes.minWidth, flexGrow: fieldSizing.notes.grow, flexShrink: 1, flexBasis: 0 }}
+                >
+                  <dt className="text-xs font-bold text-slate-500">ملاحظات</dt>
+                  <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800">
+                    {orderDetails.dataEntry?.notes || '—'}
+                  </dd>
+                </div>
+                <div
+                  className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                  style={{ minWidth: fieldSizing.status.minWidth, flexGrow: fieldSizing.status.grow, flexShrink: 1, flexBasis: 0 }}
+                >
+                  <dt className="text-xs font-bold text-slate-500">الحالة</dt>
+                  <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                    {orderDetails.order.status || '—'}
+                  </dd>
+                </div>
+              </div>
             </div>
           )}
         </div>
