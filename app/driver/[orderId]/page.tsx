@@ -39,26 +39,16 @@ const dataEntryFields: Array<[keyof DataEntry, string]> = [
   ['total', 'الإجمالي'],
 ];
 
-function driverFieldClass(key: string): string {
-  switch (key) {
-    case 'recipientName':
-    case 'recipientPhone':
-    case 'recipientGovernorate':
-      return 'block md:col-span-4';
-    case 'product':
-      return 'block md:col-span-4 md:col-start-1';
-    case 'price':
-    case 'shippingFeePrinted':
-    case 'total':
-      return 'block md:col-span-3';
-    case 'recipientAddress':
-      return 'block md:col-span-17 md:col-start-1';
-    case 'notes':
-      return 'block md:col-span-8';
-    default:
-      return 'block md:col-span-4';
-  }
-}
+const fieldSizing: Record<string, { minWidth: string; grow: number }> = {
+  recipientName: { minWidth: '90px', grow: 1 },
+  recipientPhone: { minWidth: '100px', grow: 1 },
+  recipientGovernorate: { minWidth: '90px', grow: 1 },
+  recipientAddress: { minWidth: '180px', grow: 3 },
+  product: { minWidth: '140px', grow: 1 },
+  price: { minWidth: '110px', grow: 1 },
+  shippingFeePrinted: { minWidth: '110px', grow: 1 },
+  total: { minWidth: '110px', grow: 1 },
+};
 
 function moneyValue(value: string | undefined): number {
   const normalized = Number((value || '').replace(/[^\d.]/g, ''));
@@ -255,19 +245,19 @@ export default function DriverVisitPage() {
           {orderDetails && (
             <div className='mt-4 space-y-4'>
               <dl className='grid gap-3 sm:grid-cols-3'>
-                <div className='rounded-md bg-slate-50 p-3'>
+                <div className='rounded-md border border-slate-200 bg-slate-50 p-3'>
                   <dt className='text-xs font-bold text-slate-500'>رقم التتبع</dt>
                   <dd className='mt-1 break-words text-sm font-semibold'>
                     {orderDetails.order.tracking || '—'}
                   </dd>
                 </div>
-                <div className='rounded-md bg-slate-50 p-3'>
+                <div className='rounded-md border border-slate-200 bg-slate-50 p-3'>
                   <dt className='text-xs font-bold text-slate-500'>الحالة</dt>
                   <dd className='mt-1 break-words text-sm font-semibold'>
                     {orderDetails.order.status || '—'}
                   </dd>
                 </div>
-                <div className='rounded-md bg-slate-50 p-3'>
+                <div className='rounded-md border border-slate-200 bg-slate-50 p-3'>
                   <dt className='text-xs font-bold text-slate-500'>التاجر</dt>
                   <dd className='mt-1 break-words text-sm font-semibold'>
                     {orderDetails.order.merchantName || '—'}
@@ -276,89 +266,127 @@ export default function DriverVisitPage() {
               </dl>
 
               {orderDetails.dataEntry ? (
-                <dl className="grid gap-2 md:grid-cols-[repeat(25,minmax(0,1fr))]">
-                  {/* 1. existing read-only fields (name → total), unchanged rendering */}
-                  {dataEntryFields.map(([key, label]) => (
-                    <div className={driverFieldClass(key)} key={key}>
-                      <dt className="text-xs font-bold text-slate-500">{label}</dt>
-                      <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800">
-                        {orderDetails.dataEntry?.[key] || '—'}
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-3">
+                    {dataEntryFields.slice(0, 4).map(([key, label]) => (
+                      <div
+                        className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                        key={key}
+                        style={{ minWidth: fieldSizing[key]?.minWidth ?? '110px', flexGrow: fieldSizing[key]?.grow ?? 1, flexShrink: 1, flexBasis: 0 }}
+                      >
+                        <dt className="text-xs font-bold text-slate-500">{label}</dt>
+                        <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                          {orderDetails.dataEntry?.[key] || '—'}
+                        </dd>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {dataEntryFields.slice(4, 5).map(([key, label]) => (
+                      <div
+                        className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                        key={key}
+                        style={{ minWidth: fieldSizing[key]?.minWidth ?? '110px', flexGrow: fieldSizing[key]?.grow ?? 1, flexShrink: 1, flexBasis: 0 }}
+                      >
+                        <dt className="text-xs font-bold text-slate-500">{label}</dt>
+                        <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                          {orderDetails.dataEntry?.[key] || '—'}
+                        </dd>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    {dataEntryFields.slice(5).map(([key, label]) => (
+                      <div
+                        className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                        key={key}
+                        style={{ minWidth: fieldSizing[key]?.minWidth ?? '110px', flexGrow: fieldSizing[key]?.grow ?? 1, flexShrink: 1, flexBasis: 0 }}
+                      >
+                        <dt className="text-xs font-bold text-slate-500">{label}</dt>
+                        <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                          {orderDetails.dataEntry?.[key] || '—'}
+                        </dd>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <div
+                      className="rounded-md border border-amber-300 bg-amber-50 p-3 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40"
+                      style={{ minWidth: fieldSizing.price.minWidth, flexGrow: fieldSizing.price.grow, flexShrink: 1, flexBasis: 0 }}
+                    >
+                      <dt className="text-xs font-bold text-slate-500" id="collected-price-label">سعر المنتج المحصل</dt>
+                      <dd className="mt-1">
+                        <input
+                          aria-labelledby="collected-price-label"
+                          className="h-8 w-full border-none bg-transparent p-0 text-sm font-semibold text-slate-800 outline-none"
+                          id="collected-price"
+                          inputMode="numeric"
+                          onChange={(event) => {
+                            const value = formatMoneyInput(event.target.value);
+                            setCollectedPricingMode('sum');
+                            setCollectedPrice(value);
+                            setCollectedTotal(calculateTotal(value, collectedShippingFee));
+                          }}
+                          value={collectedPrice}
+                        />
                       </dd>
                     </div>
-                  ))}
-
-                  {/* 2. three new editable inputs, same column-span sizing as price/shippingFeePrinted/total.
-                        Each wraps its <input> in a <dd> (keeps valid dl/dt/dd structure — a bare
-                        <dt> followed by <input> with no <dd> was flagged in spec review as breaking
-                        the dl/dt/dd semantics this file's read-only fields already establish), and
-                        each <input> carries an explicit id + aria-labelledby pairing with its <dt>
-                        so the visual label is also the accessible label, not merely adjacent text. */}
-                  <div className="block md:col-span-3">
-                    <dt className="text-xs font-bold text-slate-500" id="collected-price-label">سعر المنتج المحصل</dt>
-                    <dd className="mt-1">
-                      <input
-                        aria-labelledby="collected-price-label"
-                        className="h-9 w-full rounded-md border border-amber-300 bg-amber-50 px-2 text-sm font-semibold text-slate-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30"
-                        id="collected-price"
-                        inputMode="numeric"
-                        onChange={(event) => {
-                          const value = formatMoneyInput(event.target.value);
-                          setCollectedPricingMode('sum');
-                          setCollectedPrice(value);
-                          setCollectedTotal(calculateTotal(value, collectedShippingFee));
-                        }}
-                        value={collectedPrice}
-                      />
-                    </dd>
-                  </div>
-                  <div className="block md:col-span-3">
-                    <dt className="text-xs font-bold text-slate-500" id="collected-shipping-label">مصاريف الشحن المحصلة</dt>
-                    <dd className="mt-1">
-                      <input
-                        aria-labelledby="collected-shipping-label"
-                        className="h-9 w-full rounded-md border border-amber-300 bg-amber-50 px-2 text-sm font-semibold text-slate-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30"
-                        id="collected-shipping"
-                        inputMode="numeric"
-                        onChange={(event) => {
-                          const value = formatMoneyInput(event.target.value);
-                          setCollectedShippingFee(value);
-                          if (collectedPricingMode === 'fromTotal') {
-                            setCollectedPrice(calculatePrice(collectedTotal, value));
-                          } else {
-                            setCollectedTotal(calculateTotal(collectedPrice, value));
-                          }
-                        }}
-                        value={collectedShippingFee}
-                      />
-                    </dd>
-                  </div>
-                  <div className="block md:col-span-3">
-                    <dt className="text-xs font-bold text-slate-500" id="collected-total-label">الإجمالي المحصل</dt>
-                    <dd className="mt-1">
-                      <input
-                        aria-labelledby="collected-total-label"
-                        className="h-9 w-full rounded-md border border-amber-300 bg-amber-50 px-2 text-sm font-semibold text-slate-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30"
-                        id="collected-total"
-                        inputMode="numeric"
-                        onChange={(event) => {
-                          const value = formatMoneyInput(event.target.value);
-                          setCollectedPricingMode('fromTotal');
-                          setCollectedTotal(value);
-                          setCollectedPrice(calculatePrice(value, collectedShippingFee));
-                        }}
-                        value={collectedTotal}
-                      />
-                    </dd>
+                    <div
+                      className="rounded-md border border-amber-300 bg-amber-50 p-3 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40"
+                      style={{ minWidth: fieldSizing.shippingFeePrinted.minWidth, flexGrow: fieldSizing.shippingFeePrinted.grow, flexShrink: 1, flexBasis: 0 }}
+                    >
+                      <dt className="text-xs font-bold text-slate-500" id="collected-shipping-label">مصاريف الشحن المحصلة</dt>
+                      <dd className="mt-1">
+                        <input
+                          aria-labelledby="collected-shipping-label"
+                          className="h-8 w-full border-none bg-transparent p-0 text-sm font-semibold text-slate-800 outline-none"
+                          id="collected-shipping"
+                          inputMode="numeric"
+                          onChange={(event) => {
+                            const value = formatMoneyInput(event.target.value);
+                            setCollectedShippingFee(value);
+                            if (collectedPricingMode === 'fromTotal') {
+                              setCollectedPrice(calculatePrice(collectedTotal, value));
+                            } else {
+                              setCollectedTotal(calculateTotal(collectedPrice, value));
+                            }
+                          }}
+                          value={collectedShippingFee}
+                        />
+                      </dd>
+                    </div>
+                    <div
+                      className="rounded-md border border-amber-300 bg-amber-50 p-3 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40"
+                      style={{ minWidth: fieldSizing.total.minWidth, flexGrow: fieldSizing.total.grow, flexShrink: 1, flexBasis: 0 }}
+                    >
+                      <dt className="text-xs font-bold text-slate-500" id="collected-total-label">الإجمالي المحصل</dt>
+                      <dd className="mt-1">
+                        <input
+                          aria-labelledby="collected-total-label"
+                          className="h-8 w-full border-none bg-transparent p-0 text-sm font-semibold text-slate-800 outline-none"
+                          id="collected-total"
+                          inputMode="numeric"
+                          onChange={(event) => {
+                            const value = formatMoneyInput(event.target.value);
+                            setCollectedPricingMode('fromTotal');
+                            setCollectedTotal(value);
+                            setCollectedPrice(calculatePrice(value, collectedShippingFee));
+                          }}
+                          value={collectedTotal}
+                        />
+                      </dd>
+                    </div>
                   </div>
 
-                  {/* 3. notes — was part of the old dataEntryFields map, now its own explicit block */}
-                  <div className={driverFieldClass('notes')}>
+                  <div className="w-full rounded-md border border-slate-200 bg-slate-50 p-3">
                     <dt className="text-xs font-bold text-slate-500">ملاحظات</dt>
                     <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800">
                       {orderDetails.dataEntry?.notes || '—'}
                     </dd>
                   </div>
-                </dl>
+                </div>
               ) : (
                 <p className='text-sm font-medium text-slate-600'>
                   لا توجد بيانات إدخال بيانات لهذا الطلب
