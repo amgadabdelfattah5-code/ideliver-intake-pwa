@@ -85,6 +85,7 @@ const reasons = [
 
 // Deliberately excludes financial/admin-only statuses (e.g. refunded) — matches the
 // WP-side STATUS_MAP; a delivery visit shouldn't be able to trigger a refund.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for the upcoming status dropdown.
 const statuses = [
   { value: 'shipment-rec', label: 'استلام الشحنة' },
   { value: 'shipped', label: 'قيد التوصيل' },
@@ -167,6 +168,7 @@ export default function DriverVisitPage() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for the upcoming status dropdown.
   const submitVisit = async (status: string) => {
     if (submitState === 'sending') return;
     if (!reasonCode) {
@@ -451,23 +453,6 @@ export default function DriverVisitPage() {
               value={note}
             />
           </label>
-
-          <div>
-            <p className="text-sm font-bold">حدّث حالة الشحنة</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {statuses.map((status) => (
-                <button
-                  className="idv-button h-11 text-sm"
-                  disabled={submitState === 'sending'}
-                  key={status.value}
-                  onClick={() => submitVisit(status.value)}
-                  type="button"
-                >
-                  {submitState === 'sending' ? 'جاري الإرسال...' : status.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {error && (
             <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
