@@ -8,7 +8,6 @@ import { getDriverOrders, submitDeliveryVisit } from '@/lib/wp-client';
 // Deliberately excludes financial/admin-only statuses (e.g. refunded) — matches the
 // WP-side STATUS_MAP in class-liquidship-driver-api.php; keep the two in sync.
 const allowedStatuses = [
-  'shipment-rec',
   'shipped',
   'delivered',
   'on-hold',

@@ -78,7 +78,6 @@ function formatMoneyInput(value: string): string {
 // Deliberately excludes financial/admin-only statuses (e.g. refunded) — matches the
 // WP-side STATUS_MAP; a delivery visit shouldn't be able to trigger a refund.
 const statuses = [
-  { value: 'shipment-rec', label: 'استلام الشحنة' },
   { value: 'shipped', label: 'قيد التوصيل' },
   { value: 'delivered', label: 'تم التوصيل' },
   { value: 'on-hold', label: 'قيد الانتظار' },
