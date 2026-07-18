@@ -97,6 +97,7 @@ export interface DeliveryVisitPayload {
   reasonCode: string;
   note?: string;
   photoDataUrl?: string;
+  locationUrl?: string;
   collectedValue?: string;
 }
 
@@ -117,6 +118,7 @@ export async function submitDeliveryVisit(payload: DeliveryVisitPayload): Promis
       reason_code: payload.reasonCode,
       note: payload.note,
       photo: payload.photoDataUrl,
+      location_url: payload.locationUrl,
       collected_value: payload.collectedValue,
     }),
   });

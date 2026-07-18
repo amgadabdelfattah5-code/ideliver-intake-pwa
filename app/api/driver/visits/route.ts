@@ -23,6 +23,7 @@ const allowedReasons = [
   'refused',
   'wrong_address',
   'postponed',
+  'not_provided',
 ];
 
 interface VisitPhoto {
@@ -102,6 +103,32 @@ function parseMoneyOrUndefined(value: unknown): string | undefined {
                          // second normalization step anywhere downstream.
 }
 
+function parseLocationUrlOrUndefined(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value !== 'string') throw new Error('invalid_location_field');
+
+  // Only accept the exact shape this feature generates — a Google Maps
+  // coordinate link — not an arbitrary URL, since this value round-trips
+  // into a WP order note without further sanitization on the Next.js side
+  // (WP-side esc_url_raw() is still the real safety net, but rejecting
+  // non-matching shapes here fails fast on obviously-wrong client input).
+  const match = value.match(/^https:\/\/maps\.google\.com\/\?q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
+  if (!match) {
+    throw new Error('invalid_location_field');
+  }
+
+  // Revised after Codex review: the regex alone accepts out-of-range values
+  // like "999,-999" — real latitude/longitude are bounded, so check the
+  // actual numeric range too, not just the string shape.
+  const lat = Number(match[1]);
+  const lng = Number(match[2]);
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new Error('invalid_location_field');
+  }
+
+  return value;
+}
+
 // Base64 photo (8MB cap) inflates ~4/3 plus the rest of the JSON body — reject anything
 // clearly larger up front instead of buffering a huge request before validating it.
 const maxRequestBytes = 12 * 1024 * 1024;
@@ -160,10 +187,12 @@ export async function POST(req: NextRequest) {
   let collectedPrice: string | undefined;
   let collectedShippingFee: string | undefined;
   let collectedTotal: string | undefined;
+  let locationUrl: string | undefined;
   try {
     collectedPrice = parseMoneyOrUndefined(body.collectedPrice);
     collectedShippingFee = parseMoneyOrUndefined(body.collectedShippingFee);
     collectedTotal = parseMoneyOrUndefined(body.collectedTotal);
+    locationUrl = parseLocationUrlOrUndefined(body.locationUrl);
   } catch {
     return NextResponse.json({ error: 'بيانات الطلب غير صحيحة' }, { status: 400 });
   }
@@ -198,6 +227,7 @@ export async function POST(req: NextRequest) {
         status,
         reasonCode,
         note,
+        locationUrl,
         collectedPrice,
         collectedShippingFee,
         collectedTotal,
@@ -253,6 +283,7 @@ export async function POST(req: NextRequest) {
         status,
         reasonCode,
         note,
+        locationUrl,
         photoDataUrl:
           typeof body.photoDataUrl === 'string' ? body.photoDataUrl : undefined,
         collectedValue: collectedTotal,

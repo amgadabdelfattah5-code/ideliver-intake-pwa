@@ -103,6 +103,7 @@ model DeliveryVisit {
   reasonCode String
   note       String?
   photoUrl   String?
+  locationUrl String?
   collectedPrice       String?
   collectedShippingFee String?
   collectedTotal       String?

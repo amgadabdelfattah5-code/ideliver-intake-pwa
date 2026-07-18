@@ -75,17 +75,8 @@ function formatMoneyInput(value: string): string {
   return digits ? Number(digits).toLocaleString('en-US') : '';
 }
 
-const reasons = [
-  { value: 'delivered', label: 'تم التوصيل' },
-  { value: 'customer_unavailable', label: 'العميل غير متاح' },
-  { value: 'refused', label: 'العميل رفض الاستلام' },
-  { value: 'wrong_address', label: 'العنوان غير صحيح' },
-  { value: 'postponed', label: 'تم التأجيل' },
-];
-
 // Deliberately excludes financial/admin-only statuses (e.g. refunded) — matches the
 // WP-side STATUS_MAP; a delivery visit shouldn't be able to trigger a refund.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for the upcoming status dropdown.
 const statuses = [
   { value: 'shipment-rec', label: 'استلام الشحنة' },
   { value: 'shipped', label: 'قيد التوصيل' },
@@ -110,9 +101,11 @@ export default function DriverVisitPage() {
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(true);
   const [detailsError, setDetailsError] = useState('');
-  const [reasonCode, setReasonCode] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [note, setNote] = useState('');
   const [photoDataUrl, setPhotoDataUrl] = useState('');
+  const [locationUrl, setLocationUrl] = useState('');
+  const [locationCapturing, setLocationCapturing] = useState(false);
   const [submitState, setSubmitState] = useState<'idle' | 'sending'>('idle');
   const [message, setMessage] = useState('');
   const [messageSynced, setMessageSynced] = useState(true);
@@ -137,6 +130,8 @@ export default function DriverVisitPage() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'تعذّر تحميل بيانات الطلب');
         setOrderDetails(data);
+        setSelectedStatus('');
+        setLocationUrl('');
       })
       .catch((loadError) => {
         setDetailsError(
@@ -168,11 +163,31 @@ export default function DriverVisitPage() {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for the upcoming status dropdown.
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      setError('المتصفح لا يدعم تحديد الموقع');
+      return;
+    }
+    setLocationCapturing(true);
+    setError('');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setLocationUrl(`https://maps.google.com/?q=${latitude},${longitude}`);
+        setLocationCapturing(false);
+      },
+      () => {
+        setError('تعذّر تحديد الموقع — يرجى السماح بالوصول للموقع');
+        setLocationCapturing(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
+
   const submitVisit = async (status: string) => {
     if (submitState === 'sending') return;
-    if (!reasonCode) {
-      setError('يرجى اختيار سبب الزيارة');
+    if (!selectedStatus) {
+      setError('يرجى اختيار الحالة');
       return;
     }
 
@@ -187,9 +202,10 @@ export default function DriverVisitPage() {
         body: JSON.stringify({
           orderId: Number(orderId),
           status,
-          reasonCode,
+          reasonCode: 'not_provided',
           note: note || undefined,
           photoDataUrl: photoDataUrl || undefined,
+          locationUrl: locationUrl || undefined,
           collectedPrice: orderDetails?.dataEntry ? collectedPrice : undefined,
           collectedShippingFee: orderDetails?.dataEntry ? collectedShippingFee : undefined,
           collectedTotal: orderDetails?.dataEntry ? collectedTotal : undefined,
@@ -210,6 +226,8 @@ export default function DriverVisitPage() {
       );
       setNote('');
       setPhotoDataUrl('');
+      setSelectedStatus('');
+      setLocationUrl('');
     } catch {
       setError('تعذّر الاتصال بالخادم');
     } finally {
@@ -399,60 +417,95 @@ export default function DriverVisitPage() {
 
       <section className="mx-auto max-w-3xl px-4 py-6">
         <div className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <label className="block">
-            <span className="text-sm font-bold">صورة إثبات التسليم</span>
-            <input
-              accept="image/*"
-              capture="environment"
-              className="mt-2 block w-full rounded-md border border-slate-300 p-3 text-sm"
-              onChange={selectPhoto}
-              type="file"
-            />
-          </label>
-
-          {photoDataUrl && (
-            <div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt="معاينة صورة الزيارة"
-                className="max-h-72 w-full rounded-md border border-slate-200 object-contain"
-                src={photoDataUrl}
-              />
-              <button
-                className="idv-button idv-button-light idv-button-small mt-2 text-sm"
-                disabled={submitState === 'sending'}
-                onClick={() => setPhotoDataUrl('')}
-                type="button"
-              >
-                إزالة الصورة
-              </button>
+          <div className="flex flex-wrap gap-3">
+            {/* 1. Photo — compact card instead of full-width block */}
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3" style={{ minWidth: '160px', flexGrow: 1, flexShrink: 1, flexBasis: 0 }}>
+              <label className="block text-xs font-bold text-slate-500" htmlFor="visit-photo-input">صورة إثبات التسليم</label>
+              <div className="mt-1">
+                <input
+                  accept="image/*"
+                  capture="environment"
+                  className="block w-full text-xs"
+                  id="visit-photo-input"
+                  onChange={selectPhoto}
+                  type="file"
+                />
+                {photoDataUrl && (
+                  <div className="mt-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img alt="معاينة صورة الزيارة" className="max-h-20 w-full rounded border border-slate-200 object-contain" src={photoDataUrl} />
+                    <button
+                      className="idv-button idv-button-light idv-button-small mt-1 text-xs"
+                      disabled={submitState === 'sending'}
+                      onClick={() => setPhotoDataUrl('')}
+                      type="button"
+                    >
+                      إزالة
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
 
-          <label className="block">
-            <span className="text-sm font-bold">سبب الزيارة</span>
-            <select
-              className="mt-2 h-12 w-full rounded-md border border-slate-300 bg-white px-3 text-sm font-medium"
-              onChange={(event) => setReasonCode(event.target.value)}
-              value={reasonCode}
-            >
-              <option value="">اختر السبب</option>
-              {reasons.map((reason) => (
-                <option key={reason.value} value={reason.value}>
-                  {reason.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            {/* 2. الحالة — status dropdown, replaces سبب الزيارة */}
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3" style={{ minWidth: '140px', flexGrow: 1, flexShrink: 1, flexBasis: 0 }}>
+              <label className="block text-xs font-bold text-slate-500" htmlFor="visit-status-select">الحالة</label>
+              <div className="mt-1">
+                <select
+                  className="h-8 w-full border-none bg-transparent p-0 text-sm font-semibold text-slate-800 outline-none"
+                  id="visit-status-select"
+                  onChange={(event) => setSelectedStatus(event.target.value)}
+                  value={selectedStatus}
+                >
+                  <option value="">اختر الحالة</option>
+                  {statuses.map((status) => (
+                    <option key={status.value} value={status.value}>{status.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-          <label className="block">
-            <span className="text-sm font-bold">ملاحظات (اختياري)</span>
-            <textarea
-              className="mt-2 min-h-28 w-full rounded-md border border-slate-300 bg-white p-3 text-sm"
-              onChange={(event) => setNote(event.target.value)}
-              value={note}
-            />
-          </label>
+            {/* 3. الموقع — one-tap GPS capture */}
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3" style={{ minWidth: '140px', flexGrow: 1, flexShrink: 1, flexBasis: 0 }}>
+              <span className="block text-xs font-bold text-slate-500" id="visit-location-label">الموقع</span>
+              <div className="mt-1">
+                <button
+                  aria-labelledby="visit-location-label visit-location-button"
+                  className="idv-button idv-button-light idv-button-small w-full text-xs"
+                  disabled={locationCapturing || submitState === 'sending'}
+                  id="visit-location-button"
+                  onClick={captureLocation}
+                  type="button"
+                >
+                  <span aria-live="polite" role="status">
+                    {locationCapturing ? 'جاري التحديد...' : locationUrl ? 'تم تحديد الموقع ✓' : 'تحديد موقعي الحالي'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* 4. ملاحظات */}
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3" style={{ minWidth: '180px', flexGrow: 2, flexShrink: 1, flexBasis: 0 }}>
+              <label className="block text-xs font-bold text-slate-500" htmlFor="visit-note-textarea">ملاحظات (اختياري)</label>
+              <div className="mt-1">
+                <textarea
+                  className="min-h-16 w-full border-none bg-transparent p-0 text-sm outline-none"
+                  id="visit-note-textarea"
+                  onChange={(event) => setNote(event.target.value)}
+                  value={note}
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            className="idv-button idv-button-primary w-full text-sm font-bold"
+            disabled={submitState === 'sending' || locationCapturing}
+            onClick={() => submitVisit(selectedStatus)}
+            type="button"
+          >
+            {submitState === 'sending' ? 'جاري الإرسال...' : 'تسجيل الزيارة'}
+          </button>
 
           {error && (
             <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
