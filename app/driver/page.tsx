@@ -15,11 +15,14 @@ interface DriverOrder {
   merchantName: string;
 }
 
+type StaffRole = 'admin' | 'pickup' | 'data_entry' | 'driver';
+
 export default function DriverOrdersPage() {
   const [orders, setOrders] = useState<DriverOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedMerchantId, setSelectedMerchantId] = useState<number | null>(null);
+  const [sessionRole, setSessionRole] = useState<StaffRole | null>(null);
 
   const merchants = useMemo(() => {
     const groups = new Map<
@@ -50,6 +53,11 @@ export default function DriverOrdersPage() {
       : merchants.find((merchant) => merchant.wpUserId === selectedMerchantId) ?? null;
 
   useEffect(() => {
+    fetch('/api/auth/me')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setSessionRole(data?.user?.role ?? null))
+      .catch(() => setSessionRole(null));
+
     fetch('/api/driver/orders')
       .then(async (response) => {
         const data = await response.json();
@@ -77,6 +85,17 @@ export default function DriverOrdersPage() {
       </header>
 
       <section className="mx-auto max-w-4xl px-4 py-6">
+        {(sessionRole === 'admin' || sessionRole === 'data_entry') && (
+          <div className="mb-4 flex justify-end">
+            <Link
+              className="idv-button idv-button-light idv-button-small text-sm"
+              href="/driver/bulk"
+            >
+              عرض كجدول (لتحديث عدة طلبات دفعة واحدة)
+            </Link>
+          </div>
+        )}
+
         {loading && <p className="text-sm font-medium">جاري تحميل الطلبات...</p>}
 
         {error && (
