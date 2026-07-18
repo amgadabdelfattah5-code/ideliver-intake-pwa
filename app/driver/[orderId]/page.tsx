@@ -50,7 +50,6 @@ const fieldSizing: Record<string, { minWidth: string; grow: number }> = {
   total: { minWidth: '110px', grow: 1 },
   merchantName: { minWidth: '120px', grow: 1 },
   notes: { minWidth: '180px', grow: 3 },
-  status: { minWidth: '90px', grow: 1 },
 };
 
 function moneyValue(value: string | undefined): number {
@@ -129,7 +128,8 @@ export default function DriverVisitPage() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'تعذّر تحميل بيانات الطلب');
         setOrderDetails(data);
-        setSelectedStatus('');
+        const currentStatusIsSelectable = statuses.some((s) => s.value === data.order.status);
+        setSelectedStatus(currentStatusIsSelectable ? data.order.status : '');
         setLocationUrl('');
       })
       .catch((loadError) => {
@@ -398,15 +398,6 @@ export default function DriverVisitPage() {
                   <dt className="text-xs font-bold text-slate-500">ملاحظات</dt>
                   <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800">
                     {orderDetails.dataEntry?.notes || '—'}
-                  </dd>
-                </div>
-                <div
-                  className="rounded-md border border-slate-200 bg-slate-50 p-3"
-                  style={{ minWidth: fieldSizing.status.minWidth, flexGrow: fieldSizing.status.grow, flexShrink: 1, flexBasis: 0 }}
-                >
-                  <dt className="text-xs font-bold text-slate-500">الحالة</dt>
-                  <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
-                    {orderDetails.order.status || '—'}
                   </dd>
                 </div>
               </div>
