@@ -12,6 +12,9 @@ interface DriverOrder {
 }
 
 interface DataEntry {
+  recipientAddress: string;
+  recipientGovernorate: string;
+  recipientPhone: string;
   price: string;
   shippingFeePrinted: string;
   total: string;
@@ -23,6 +26,12 @@ interface GridRow {
   tracking: string;
   customerName: string;
   merchantName: string;
+  recipientAddress: string;
+  recipientGovernorate: string;
+  recipientPhone: string;
+  printedPrice: string;
+  printedShippingFee: string;
+  printedTotal: string;
   currentStatus: string;
   selectedStatus: string;
   note: string;
@@ -30,7 +39,6 @@ interface GridRow {
   collectedShippingFee: string;
   collectedTotal: string;
   collectedPricingMode: 'sum' | 'fromTotal';
-  dataEntryFetchState: 'idle' | 'pending' | 'loaded' | 'failed';
   originalNote: string;
   amountsDirty: boolean;
   submitState: 'idle' | 'sending';
@@ -41,9 +49,11 @@ interface GridRow {
 
 interface GridFilters {
   tracking: string;
-  customerName: string;
   merchantName: string;
-  currentStatus: string;
+  customerName: string;
+  recipientGovernorate: string;
+  recipientAddress: string;
+  recipientPhone: string;
 }
 
 function moneyValue(value: string | undefined): number {
@@ -81,9 +91,11 @@ const statuses = [
 
 const initialFilters: GridFilters = {
   tracking: '',
-  customerName: '',
   merchantName: '',
-  currentStatus: '',
+  customerName: '',
+  recipientGovernorate: '',
+  recipientAddress: '',
+  recipientPhone: '',
 };
 
 export default function DriverBulkPage() {
@@ -91,12 +103,61 @@ export default function DriverBulkPage() {
   const [filters, setFilters] = useState<GridFilters>(initialFilters);
   const [accessState, setAccessState] = useState<'checking' | 'allowed' | 'forbidden'>('checking');
   const [loading, setLoading] = useState(true);
+  const [dataEntriesLoadState, setDataEntriesLoadState] =
+    useState<'idle' | 'loading' | 'loaded' | 'failed'>('idle');
   const [error, setError] = useState('');
-  const prefillOrderIds = useRef(new Set<number>());
   const sendingOrderIds = useRef(new Set<number>());
 
   useEffect(() => {
     let cancelled = false;
+
+    async function loadDataEntries(orderIds: number[]) {
+      if (orderIds.length === 0) return;
+      setDataEntriesLoadState('loading');
+
+      try {
+        const ids = orderIds.join(',');
+        const detailsResponse = await fetch(
+          `/api/driver/orders/data-entries?ids=${encodeURIComponent(ids)}`
+        );
+        const detailsData = await detailsResponse.json();
+        if (!detailsResponse.ok) {
+          throw new Error(detailsData.error || 'data_entries_failed');
+        }
+        if (cancelled) return;
+
+        setRows((previousRows) =>
+          previousRows.map((row) => {
+            const entry = detailsData.dataEntries?.[String(row.orderId)] as
+              | DataEntry
+              | undefined;
+            if (!entry) return row;
+
+            return {
+              ...row,
+              recipientAddress: entry.recipientAddress,
+              recipientGovernorate: entry.recipientGovernorate,
+              recipientPhone: entry.recipientPhone,
+              printedPrice: entry.price,
+              printedShippingFee: entry.shippingFeePrinted,
+              printedTotal: entry.total,
+              originalNote: entry.notes,
+              ...(row.amountsDirty
+                ? {}
+                : {
+                    collectedPrice: entry.price,
+                    collectedShippingFee: entry.shippingFeePrinted,
+                    collectedTotal: entry.total,
+                  }),
+            };
+          })
+        );
+        if (!cancelled) setDataEntriesLoadState('loaded');
+      } catch {
+        // A batch failure leaves only the new fields blank; it must not hide the table.
+        if (!cancelled) setDataEntriesLoadState('failed');
+      }
+    }
 
     async function loadRows() {
       try {
@@ -120,8 +181,9 @@ export default function DriverBulkPage() {
         }
 
         if (cancelled) return;
+        const orders = (ordersData.orders || []) as DriverOrder[];
         setRows(
-          ((ordersData.orders || []) as DriverOrder[]).map((order) => {
+          orders.map((order) => {
             const currentStatusIsSelectable = statuses.some(
               (status) => status.value === order.status
             );
@@ -131,6 +193,12 @@ export default function DriverBulkPage() {
               tracking: order.tracking,
               customerName: order.customerName,
               merchantName: order.merchantName,
+              recipientAddress: '',
+              recipientGovernorate: '',
+              recipientPhone: '',
+              printedPrice: '',
+              printedShippingFee: '',
+              printedTotal: '',
               currentStatus: order.status,
               selectedStatus: currentStatusIsSelectable ? order.status : '',
               note: '',
@@ -138,7 +206,6 @@ export default function DriverBulkPage() {
               collectedShippingFee: '',
               collectedTotal: '',
               collectedPricingMode: 'sum',
-              dataEntryFetchState: 'idle',
               originalNote: '',
               amountsDirty: false,
               submitState: 'idle',
@@ -148,6 +215,7 @@ export default function DriverBulkPage() {
             };
           })
         );
+        void loadDataEntries(orders.map((order) => order.orderId));
       } catch (loadError) {
         if (!cancelled) {
           setError(
@@ -165,62 +233,6 @@ export default function DriverBulkPage() {
     };
   }, []);
 
-  useEffect(() => {
-    for (const row of rows) {
-      if (
-        row.dataEntryFetchState !== 'pending' ||
-        prefillOrderIds.current.has(row.orderId)
-      ) {
-        continue;
-      }
-
-      prefillOrderIds.current.add(row.orderId);
-      void (async () => {
-        try {
-          const response = await fetch(
-            `/api/driver/orders/${encodeURIComponent(row.orderId)}`
-          );
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || 'prefill_failed');
-
-          const dataEntry = (data.dataEntry ?? null) as DataEntry | null;
-          setRows((previousRows) =>
-            previousRows.map((currentRow) => {
-              if (currentRow.orderId !== row.orderId) return currentRow;
-              if (!dataEntry) {
-                return { ...currentRow, dataEntryFetchState: 'loaded' };
-              }
-
-              return {
-                ...currentRow,
-                ...(currentRow.amountsDirty
-                  ? {}
-                  : {
-                      collectedPrice: dataEntry.price,
-                      collectedShippingFee: dataEntry.shippingFeePrinted,
-                      collectedTotal: dataEntry.total,
-                      collectedPricingMode: 'sum' as const,
-                    }),
-                dataEntryFetchState: 'loaded',
-                originalNote: dataEntry.notes,
-              };
-            })
-          );
-        } catch {
-          setRows((previousRows) =>
-            previousRows.map((currentRow) =>
-              currentRow.orderId === row.orderId
-                ? { ...currentRow, dataEntryFetchState: 'failed' }
-                : currentRow
-            )
-          );
-        } finally {
-          prefillOrderIds.current.delete(row.orderId);
-        }
-      })();
-    }
-  }, [rows]);
-
   const visibleRows = useMemo(() => {
     const normalizedFilters = Object.fromEntries(
       Object.entries(filters).map(([key, value]) => [key, value.toLocaleLowerCase()])
@@ -229,29 +241,21 @@ export default function DriverBulkPage() {
     return rows.filter(
       (row) =>
         row.tracking.toLocaleLowerCase().includes(normalizedFilters.tracking) &&
-        row.customerName.toLocaleLowerCase().includes(normalizedFilters.customerName) &&
         row.merchantName.toLocaleLowerCase().includes(normalizedFilters.merchantName) &&
-        row.currentStatus.toLocaleLowerCase().includes(normalizedFilters.currentStatus)
+        row.customerName.toLocaleLowerCase().includes(normalizedFilters.customerName) &&
+        row.recipientGovernorate
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.recipientGovernorate) &&
+        row.recipientAddress
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.recipientAddress) &&
+        row.recipientPhone.toLocaleLowerCase().includes(normalizedFilters.recipientPhone)
     );
   }, [filters, rows]);
 
   function updateRow(orderId: number, update: (row: GridRow) => GridRow) {
     setRows((previousRows) =>
       previousRows.map((row) => (row.orderId === orderId ? update(row) : row))
-    );
-  }
-
-  function requestPrefill(orderId: number) {
-    setRows((previousRows) =>
-      previousRows.map((row) => {
-        if (
-          row.orderId !== orderId ||
-          (row.dataEntryFetchState !== 'idle' && row.dataEntryFetchState !== 'failed')
-        ) {
-          return row;
-        }
-        return { ...row, dataEntryFetchState: 'pending' };
-      })
     );
   }
 
@@ -408,15 +412,17 @@ export default function DriverBulkPage() {
 
         {!loading && !error && rows.length > 0 && (
           <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-            <table className="w-full min-w-[1850px] border-collapse text-right text-xs">
+            <table className="w-full min-w-[2500px] border-collapse text-right text-xs">
               <thead className="bg-slate-100 text-[#17365F]">
                 <tr className="align-top">
                   {(
                     [
                       ['tracking', 'رقم الطلب'],
-                      ['customerName', 'المستلم'],
                       ['merchantName', 'التاجر'],
-                      ['currentStatus', 'الحالة الحالية'],
+                      ['customerName', 'المستلم'],
+                      ['recipientGovernorate', 'المحافظة'],
+                      ['recipientAddress', 'العنوان'],
+                      ['recipientPhone', 'رقم الهاتف'],
                     ] as Array<[keyof GridFilters, string]>
                   ).map(([key, label]) => (
                     <th className="min-w-36 border-b border-slate-200 p-2" key={key}>
@@ -437,11 +443,14 @@ export default function DriverBulkPage() {
                       </label>
                     </th>
                   ))}
-                  <th className="min-w-40 border-b border-slate-200 p-2">الحالة الجديدة</th>
+                  <th className="min-w-36 border-b border-slate-200 p-2">سعر المنتج</th>
+                  <th className="min-w-36 border-b border-slate-200 p-2">مصاريف الشحن</th>
+                  <th className="min-w-36 border-b border-slate-200 p-2">الإجمالي</th>
                   <th className="min-w-36 border-b border-slate-200 p-2">سعر المنتج المحصل</th>
                   <th className="min-w-36 border-b border-slate-200 p-2">مصاريف الشحن المحصلة</th>
                   <th className="min-w-36 border-b border-slate-200 p-2">الإجمالي المحصل</th>
-                  <th className="min-w-52 border-b border-slate-200 p-2">ملاحظات</th>
+                  <th className="min-w-52 border-b border-slate-200 p-2">ملاحظات (اختياري)</th>
+                  <th className="min-w-40 border-b border-slate-200 p-2">الحالة</th>
                   <th className="min-w-56 border-b border-slate-200 p-2">—</th>
                 </tr>
               </thead>
@@ -451,32 +460,27 @@ export default function DriverBulkPage() {
                   return (
                     <tr className="align-top" key={row.orderId}>
                       <td className="p-2 font-bold text-slate-800">{row.tracking || '—'}</td>
-                      <td className="p-2 font-semibold text-slate-700">{row.customerName || '—'}</td>
                       <td className="p-2 font-semibold text-slate-700">{row.merchantName || '—'}</td>
-                      <td className="p-2 font-semibold text-slate-700">{row.currentStatus || '—'}</td>
-                      <td className="p-2">
-                        <select
-                          aria-label={`الحالة الجديدة للطلب ${row.tracking}`}
-                          className="h-9 w-full rounded border border-slate-300 bg-white px-2 font-semibold text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
-                          disabled={sending}
-                          onChange={(event) =>
-                            updateRow(row.orderId, (currentRow) => ({
-                              ...currentRow,
-                              selectedStatus: event.target.value,
-                              error: '',
-                            }))
-                          }
-                          onClick={() => requestPrefill(row.orderId)}
-                          onFocus={() => requestPrefill(row.orderId)}
-                          value={row.selectedStatus}
-                        >
-                          <option value="">اختر الحالة</option>
-                          {statuses.map((status) => (
-                            <option key={status.value} value={status.value}>
-                              {status.label}
-                            </option>
-                          ))}
-                        </select>
+                      <td className="p-2 font-semibold text-slate-700">{row.customerName || '—'}</td>
+                      <td className="p-2 font-semibold text-slate-700">
+                        {row.recipientGovernorate ||
+                          (dataEntriesLoadState === 'loading' ? '…' : '')}
+                      </td>
+                      <td className="p-2 whitespace-pre-wrap break-words font-semibold text-slate-700">
+                        {row.recipientAddress || (dataEntriesLoadState === 'loading' ? '…' : '')}
+                      </td>
+                      <td className="p-2 font-semibold text-slate-700">
+                        {row.recipientPhone || (dataEntriesLoadState === 'loading' ? '…' : '')}
+                      </td>
+                      <td className="p-2 font-semibold text-slate-700">
+                        {row.printedPrice || (dataEntriesLoadState === 'loading' ? '…' : '')}
+                      </td>
+                      <td className="p-2 font-semibold text-slate-700">
+                        {row.printedShippingFee ||
+                          (dataEntriesLoadState === 'loading' ? '…' : '')}
+                      </td>
+                      <td className="p-2 font-semibold text-slate-700">
+                        {row.printedTotal || (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
                       <td className="p-2">
                         <input
@@ -485,7 +489,6 @@ export default function DriverBulkPage() {
                           disabled={sending}
                           inputMode="numeric"
                           onChange={(event) => updatePrice(row.orderId, event.target.value)}
-                          onFocus={() => requestPrefill(row.orderId)}
                           value={row.collectedPrice}
                         />
                       </td>
@@ -496,7 +499,6 @@ export default function DriverBulkPage() {
                           disabled={sending}
                           inputMode="numeric"
                           onChange={(event) => updateShippingFee(row.orderId, event.target.value)}
-                          onFocus={() => requestPrefill(row.orderId)}
                           value={row.collectedShippingFee}
                         />
                       </td>
@@ -507,7 +509,6 @@ export default function DriverBulkPage() {
                           disabled={sending}
                           inputMode="numeric"
                           onChange={(event) => updateTotal(row.orderId, event.target.value)}
-                          onFocus={() => requestPrefill(row.orderId)}
                           value={row.collectedTotal}
                         />
                       </td>
@@ -529,6 +530,31 @@ export default function DriverBulkPage() {
                           }
                           value={row.note}
                         />
+                      </td>
+                      <td className="p-2">
+                        <p className="mb-1 text-[11px] font-semibold text-slate-500">
+                          {row.currentStatus || '—'}
+                        </p>
+                        <select
+                          aria-label={`الحالة الجديدة للطلب ${row.tracking}`}
+                          className="h-9 w-full rounded border border-slate-300 bg-white px-2 font-semibold text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
+                          disabled={sending}
+                          onChange={(event) =>
+                            updateRow(row.orderId, (currentRow) => ({
+                              ...currentRow,
+                              selectedStatus: event.target.value,
+                              error: '',
+                            }))
+                          }
+                          value={row.selectedStatus}
+                        >
+                          <option value="">اختر الحالة</option>
+                          {statuses.map((status) => (
+                            <option key={status.value} value={status.value}>
+                              {status.label}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="p-2">
                         <button

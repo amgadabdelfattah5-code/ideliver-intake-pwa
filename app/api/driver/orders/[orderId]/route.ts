@@ -41,7 +41,7 @@ export async function GET(
 
     const localOrder = await prisma.order.findFirst({
       where: { shipmentId: String(orderId) },
-      orderBy: { submittedAt: 'desc' },
+      orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
       select: { correctedFields: true },
     });
 
