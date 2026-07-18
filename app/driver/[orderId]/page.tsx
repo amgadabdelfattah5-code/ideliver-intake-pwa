@@ -250,22 +250,22 @@ export default function DriverVisitPage() {
           </Link>
         </div>
       </header>
-      <section className='mx-auto max-w-3xl px-4 pt-6'>
-        <div className='rounded-lg border border-slate-200 bg-white p-5 shadow-sm'>
-          <h2 className='text-lg font-bold'>بيانات الطلب</h2>
+      <section className="mx-auto max-w-3xl px-4 py-6">
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold">بيانات الطلب</h2>
 
           {detailsLoading && (
-            <p className='mt-3 text-sm font-medium text-slate-600'>جاري تحميل بيانات الطلب...</p>
+            <p className="mt-3 text-sm font-medium text-slate-600">جاري تحميل بيانات الطلب...</p>
           )}
 
           {detailsError && (
-            <p className='mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700'>
+            <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
               {detailsError}
             </p>
           )}
 
           {orderDetails && (
-            <div className='mt-4 space-y-4'>
+            <div className="mt-4 space-y-4">
               {orderDetails.dataEntry ? (
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-3">
@@ -404,12 +404,7 @@ export default function DriverVisitPage() {
               )}
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-3xl px-4 py-6">
-        <div className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
             {/* 1. Photo — compact card instead of full-width block */}
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3" style={{ minWidth: '160px', flexGrow: 1, flexShrink: 1, flexBasis: 0 }}>
               <label className="block text-xs font-bold text-slate-500" htmlFor="visit-photo-input">صورة إثبات التسليم</label>
@@ -496,7 +491,7 @@ export default function DriverVisitPage() {
           </div>
 
           <button
-            className="idv-button idv-button-primary w-full text-sm font-bold"
+            className="idv-button idv-button-primary mt-5 w-full text-sm font-bold"
             disabled={submitState === 'sending' || locationCapturing}
             onClick={() => submitVisit(selectedStatus)}
             type="button"
@@ -505,7 +500,7 @@ export default function DriverVisitPage() {
           </button>
 
           {error && (
-            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+            <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
               {error}
             </p>
           )}
@@ -513,9 +508,9 @@ export default function DriverVisitPage() {
           {message && (
             <p
               className={
-                messageSynced
+                (messageSynced
                   ? 'rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700'
-                  : 'rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800'
+                  : 'rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800') + ' mt-4'
               }
             >
               {message}
