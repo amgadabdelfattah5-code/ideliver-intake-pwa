@@ -45,11 +45,10 @@ const fieldSizing: Record<string, { minWidth: string; grow: number }> = {
   recipientGovernorate: { minWidth: '90px', grow: 1 },
   recipientAddress: { minWidth: '180px', grow: 3 },
   product: { minWidth: '140px', grow: 1 },
-  price: { minWidth: '110px', grow: 1 },
-  shippingFeePrinted: { minWidth: '110px', grow: 1 },
-  total: { minWidth: '110px', grow: 1 },
+  price: { minWidth: '55px', grow: 1 },
+  shippingFeePrinted: { minWidth: '55px', grow: 1 },
+  total: { minWidth: '55px', grow: 1 },
   merchantName: { minWidth: '120px', grow: 1 },
-  notes: { minWidth: '180px', grow: 3 },
 };
 
 function moneyValue(value: string | undefined): number {
@@ -286,28 +285,37 @@ export default function DriverVisitPage() {
                   <div className="flex flex-wrap gap-3">
                     {dataEntryFields.slice(5).map(([key, label]) => (
                       <div
-                        className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                        className="rounded-md border border-slate-200 bg-slate-50 p-2"
                         key={key}
                         style={{ minWidth: fieldSizing[key]?.minWidth ?? '110px', flexGrow: fieldSizing[key]?.grow ?? 1, flexShrink: 1, flexBasis: 0 }}
                       >
                         <dt className="text-xs font-bold text-slate-500">{label}</dt>
-                        <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                        <dd className="mt-1 break-words text-xs font-semibold text-slate-800">
                           {orderDetails.dataEntry?.[key] || '—'}
                         </dd>
                       </div>
                     ))}
+                    <div
+                      className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                      style={{ minWidth: fieldSizing.product.minWidth, flexGrow: fieldSizing.product.grow, flexShrink: 1, flexBasis: 0 }}
+                    >
+                      <dt className="text-xs font-bold text-slate-500">المنتج</dt>
+                      <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                        {orderDetails.dataEntry?.product || '—'}
+                      </dd>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap gap-3">
                     <div
-                      className="rounded-md border border-amber-300 bg-amber-50 p-3 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40"
+                      className="rounded-md border border-amber-300 bg-amber-50 p-2 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40"
                       style={{ minWidth: fieldSizing.price.minWidth, flexGrow: fieldSizing.price.grow, flexShrink: 1, flexBasis: 0 }}
                     >
                       <dt className="text-xs font-bold text-slate-500" id="collected-price-label">سعر المنتج المحصل</dt>
                       <dd className="mt-1">
                         <input
                           aria-labelledby="collected-price-label"
-                          className="h-8 w-full border-none bg-transparent p-0 text-sm font-semibold text-slate-800 outline-none"
+                          className="h-8 w-full border-none bg-transparent p-0 text-xs font-semibold text-slate-800 outline-none"
                           id="collected-price"
                           inputMode="numeric"
                           onChange={(event) => {
@@ -321,14 +329,14 @@ export default function DriverVisitPage() {
                       </dd>
                     </div>
                     <div
-                      className="rounded-md border border-amber-300 bg-amber-50 p-3 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40"
+                      className="rounded-md border border-amber-300 bg-amber-50 p-2 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40"
                       style={{ minWidth: fieldSizing.shippingFeePrinted.minWidth, flexGrow: fieldSizing.shippingFeePrinted.grow, flexShrink: 1, flexBasis: 0 }}
                     >
                       <dt className="text-xs font-bold text-slate-500" id="collected-shipping-label">مصاريف الشحن المحصلة</dt>
                       <dd className="mt-1">
                         <input
                           aria-labelledby="collected-shipping-label"
-                          className="h-8 w-full border-none bg-transparent p-0 text-sm font-semibold text-slate-800 outline-none"
+                          className="h-8 w-full border-none bg-transparent p-0 text-xs font-semibold text-slate-800 outline-none"
                           id="collected-shipping"
                           inputMode="numeric"
                           onChange={(event) => {
@@ -345,14 +353,14 @@ export default function DriverVisitPage() {
                       </dd>
                     </div>
                     <div
-                      className="rounded-md border border-amber-300 bg-amber-50 p-3 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40"
+                      className="rounded-md border border-amber-300 bg-amber-50 p-2 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40"
                       style={{ minWidth: fieldSizing.total.minWidth, flexGrow: fieldSizing.total.grow, flexShrink: 1, flexBasis: 0 }}
                     >
                       <dt className="text-xs font-bold text-slate-500" id="collected-total-label">الإجمالي المحصل</dt>
                       <dd className="mt-1">
                         <input
                           aria-labelledby="collected-total-label"
-                          className="h-8 w-full border-none bg-transparent p-0 text-sm font-semibold text-slate-800 outline-none"
+                          className="h-8 w-full border-none bg-transparent p-0 text-xs font-semibold text-slate-800 outline-none"
                           id="collected-total"
                           inputMode="numeric"
                           onChange={(event) => {
@@ -365,42 +373,35 @@ export default function DriverVisitPage() {
                         />
                       </dd>
                     </div>
+                    <div
+                      className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                      style={{ minWidth: fieldSizing.merchantName.minWidth, flexGrow: fieldSizing.merchantName.grow, flexShrink: 1, flexBasis: 0 }}
+                    >
+                      <dt className="text-xs font-bold text-slate-500">التاجر</dt>
+                      <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                        {orderDetails.order.merchantName || '—'}
+                      </dd>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <p className='text-sm font-medium text-slate-600'>
-                  لا توجد بيانات إدخال بيانات لهذا الطلب
-                </p>
+                <div className="space-y-3">
+                  <p className='text-sm font-medium text-slate-600'>
+                    لا توجد بيانات إدخال بيانات لهذا الطلب
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <div
+                      className="rounded-md border border-slate-200 bg-slate-50 p-3"
+                      style={{ minWidth: fieldSizing.merchantName.minWidth, flexGrow: fieldSizing.merchantName.grow, flexShrink: 1, flexBasis: 0 }}
+                    >
+                      <dt className="text-xs font-bold text-slate-500">التاجر</dt>
+                      <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+                        {orderDetails.order.merchantName || '—'}
+                      </dd>
+                    </div>
+                  </div>
+                </div>
               )}
-              <div className="flex flex-wrap gap-3">
-                <div
-                  className="rounded-md border border-slate-200 bg-slate-50 p-3"
-                  style={{ minWidth: fieldSizing.product.minWidth, flexGrow: fieldSizing.product.grow, flexShrink: 1, flexBasis: 0 }}
-                >
-                  <dt className="text-xs font-bold text-slate-500">المنتج</dt>
-                  <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
-                    {orderDetails.dataEntry?.product || '—'}
-                  </dd>
-                </div>
-                <div
-                  className="rounded-md border border-slate-200 bg-slate-50 p-3"
-                  style={{ minWidth: fieldSizing.merchantName.minWidth, flexGrow: fieldSizing.merchantName.grow, flexShrink: 1, flexBasis: 0 }}
-                >
-                  <dt className="text-xs font-bold text-slate-500">التاجر</dt>
-                  <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
-                    {orderDetails.order.merchantName || '—'}
-                  </dd>
-                </div>
-                <div
-                  className="rounded-md border border-slate-200 bg-slate-50 p-3"
-                  style={{ minWidth: fieldSizing.notes.minWidth, flexGrow: fieldSizing.notes.grow, flexShrink: 1, flexBasis: 0 }}
-                >
-                  <dt className="text-xs font-bold text-slate-500">ملاحظات</dt>
-                  <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800">
-                    {orderDetails.dataEntry?.notes || '—'}
-                  </dd>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -478,6 +479,11 @@ export default function DriverVisitPage() {
             {/* 4. ملاحظات */}
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3" style={{ minWidth: '180px', flexGrow: 2, flexShrink: 1, flexBasis: 0 }}>
               <label className="block text-xs font-bold text-slate-500" htmlFor="visit-note-textarea">ملاحظات (اختياري)</label>
+              {orderDetails?.dataEntry?.notes?.trim() && (
+                <p className="mt-1 whitespace-pre-wrap break-words text-xs text-slate-600">
+                  {orderDetails.dataEntry.notes}
+                </p>
+              )}
               <div className="mt-1">
                 <textarea
                   className="min-h-16 w-full border-none bg-transparent p-0 text-sm outline-none"
