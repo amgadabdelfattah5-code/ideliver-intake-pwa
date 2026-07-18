@@ -169,6 +169,7 @@ export default function DriverVisitPage() {
       return;
     }
     setLocationCapturing(true);
+    setLocationUrl('');
     setError('');
     navigator.geolocation.getCurrentPosition(
       (position) => {

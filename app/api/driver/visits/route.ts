@@ -107,6 +107,11 @@ function parseLocationUrlOrUndefined(value: unknown): string | undefined {
   if (value == null) return undefined;
   if (typeof value !== 'string') throw new Error('invalid_location_field');
 
+  // A real Google Maps coordinate link is well under 100 chars — cap length
+  // up front so a pathological input (e.g. a million-digit "coordinate")
+  // can't reach the regex/Number() parse below at all.
+  if (value.length > 100) throw new Error('invalid_location_field');
+
   // Only accept the exact shape this feature generates — a Google Maps
   // coordinate link — not an arbitrary URL, since this value round-trips
   // into a WP order note without further sanitization on the Next.js side
