@@ -99,6 +99,8 @@ export interface DeliveryVisitPayload {
   photoDataUrl?: string;
   locationUrl?: string;
   collectedValue?: string;
+  collectedPrice?: string;
+  collectedShippingFee?: string;
 }
 
 export async function submitDeliveryVisit(payload: DeliveryVisitPayload): Promise<void> {
@@ -120,6 +122,8 @@ export async function submitDeliveryVisit(payload: DeliveryVisitPayload): Promis
       photo: payload.photoDataUrl,
       location_url: payload.locationUrl,
       collected_value: payload.collectedValue,
+      collected_price: payload.collectedPrice,
+      collected_shipping_fee: payload.collectedShippingFee,
     }),
   });
 

@@ -290,6 +290,8 @@ export async function POST(req: NextRequest) {
         locationUrl,
         photoDataUrl:
           typeof body.photoDataUrl === 'string' ? body.photoDataUrl : undefined,
+        collectedPrice,
+        collectedShippingFee,
         collectedValue: collectedTotal,
       });
       synced = true;
