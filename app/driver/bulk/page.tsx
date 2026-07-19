@@ -537,7 +537,11 @@ export default function DriverBulkPage() {
                 per request. Uses the exact same table-fixed + <colgroup>
                 percentage widths as the table below, so its columns line up
                 with the table's columns despite being visually two boxes. */}
-            <div className="mb-3 rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+            {/* No padding on this wrapper — must exactly match the main
+                table's wrapper (border only) below so both tables render
+                at the identical inner width and their columns stay
+                pixel-aligned across the two visually separate cards. */}
+            <div className="mb-3 rounded-lg border border-slate-200 bg-white shadow-sm">
               <table className="w-full table-fixed border-collapse text-right text-[11px]">
                 <colgroup>
                   {columnWidths.map((width, index) => (
