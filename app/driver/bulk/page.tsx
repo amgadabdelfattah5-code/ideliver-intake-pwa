@@ -425,7 +425,13 @@ export default function DriverBulkPage() {
                       ['recipientPhone', 'رقم الهاتف'],
                     ] as Array<[keyof GridFilters, string]>
                   ).map(([key, label]) => (
-                    <th className="min-w-36 border-b border-slate-200 p-2" key={key}>
+                    <th
+                      className={
+                        (key === 'recipientPhone' ? 'min-w-[72px]' : 'min-w-36') +
+                        ' border-b border-slate-200 p-2'
+                      }
+                      key={key}
+                    >
                       <label className="block font-bold">
                         {label}
                         <input
@@ -446,11 +452,11 @@ export default function DriverBulkPage() {
                   <th className="min-w-36 border-b border-slate-200 p-2">سعر المنتج</th>
                   <th className="min-w-36 border-b border-slate-200 p-2">مصاريف الشحن</th>
                   <th className="min-w-36 border-b border-slate-200 p-2">الإجمالي</th>
-                  <th className="min-w-36 border-b border-slate-200 p-2">سعر المنتج المحصل</th>
-                  <th className="min-w-36 border-b border-slate-200 p-2">مصاريف الشحن المحصلة</th>
-                  <th className="min-w-36 border-b border-slate-200 p-2">الإجمالي المحصل</th>
-                  <th className="min-w-52 border-b border-slate-200 p-2">ملاحظات (اختياري)</th>
+                  <th className="min-w-[43px] border-b border-slate-200 p-2">سعر المنتج المحصل</th>
+                  <th className="min-w-[43px] border-b border-slate-200 p-2">مصاريف الشحن المحصلة</th>
+                  <th className="min-w-[43px] border-b border-slate-200 p-2">الإجمالي المحصل</th>
                   <th className="min-w-40 border-b border-slate-200 p-2">الحالة</th>
+                  <th className="min-w-52 border-b border-slate-200 p-2">ملاحظات (اختياري)</th>
                   <th className="min-w-56 border-b border-slate-200 p-2">—</th>
                 </tr>
               </thead>
@@ -513,25 +519,6 @@ export default function DriverBulkPage() {
                         />
                       </td>
                       <td className="p-2">
-                        {row.originalNote.trim() && (
-                          <p className="mb-1 whitespace-pre-wrap break-words text-[11px] leading-4 text-slate-500">
-                            {row.originalNote}
-                          </p>
-                        )}
-                        <textarea
-                          aria-label={`ملاحظات الطلب ${row.tracking}`}
-                          className="min-h-16 w-full resize-y rounded border border-slate-300 bg-white p-2 font-medium text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
-                          disabled={sending}
-                          onChange={(event) =>
-                            updateRow(row.orderId, (currentRow) => ({
-                              ...currentRow,
-                              note: event.target.value,
-                            }))
-                          }
-                          value={row.note}
-                        />
-                      </td>
-                      <td className="p-2">
                         <p className="mb-1 text-[11px] font-semibold text-slate-500">
                           {row.currentStatus || '—'}
                         </p>
@@ -555,6 +542,25 @@ export default function DriverBulkPage() {
                             </option>
                           ))}
                         </select>
+                      </td>
+                      <td className="p-2">
+                        {row.originalNote.trim() && (
+                          <p className="mb-1 whitespace-pre-wrap break-words text-[11px] leading-4 text-slate-500">
+                            {row.originalNote}
+                          </p>
+                        )}
+                        <textarea
+                          aria-label={`ملاحظات الطلب ${row.tracking}`}
+                          className="min-h-16 w-full resize-y rounded border border-slate-300 bg-white p-2 font-medium text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
+                          disabled={sending}
+                          onChange={(event) =>
+                            updateRow(row.orderId, (currentRow) => ({
+                              ...currentRow,
+                              note: event.target.value,
+                            }))
+                          }
+                          value={row.note}
+                        />
                       </td>
                       <td className="p-2">
                         <button
