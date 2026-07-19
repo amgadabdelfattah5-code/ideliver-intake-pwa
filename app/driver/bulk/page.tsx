@@ -451,7 +451,7 @@ export default function DriverBulkPage() {
                         {label}
                         <input
                           aria-label={`تصفية حسب ${label}`}
-                          className="mt-1 h-7 w-full rounded border border-slate-300 bg-white px-1 font-medium text-slate-800 outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+                          className="mt-1 h-7 w-full min-w-0 rounded border border-slate-300 bg-white px-1 font-medium text-slate-800 outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
                           onChange={(event) =>
                             setFilters((currentFilters) => ({
                               ...currentFilters,
@@ -480,27 +480,27 @@ export default function DriverBulkPage() {
                   const sending = row.submitState === 'sending';
                   return (
                     <tr className="align-top" key={row.orderId}>
-                      <td className="overflow-hidden p-1 font-bold text-slate-800">{row.tracking || '—'}</td>
-                      <td className="overflow-hidden p-1 font-semibold text-slate-700">{row.merchantName || '—'}</td>
-                      <td className="overflow-hidden p-1 font-semibold text-slate-700">{row.customerName || '—'}</td>
-                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
+                      <td className="overflow-hidden truncate p-1 font-bold text-slate-800" title={row.tracking || undefined}>{row.tracking || '—'}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantName || undefined}>{row.merchantName || '—'}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.customerName || undefined}>{row.customerName || '—'}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientGovernorate || undefined}>
                         {row.recipientGovernorate ||
                           (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700">
+                      <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700" title={row.recipientAddress || undefined}>
                         {row.recipientAddress || (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientPhone || undefined}>
                         {row.recipientPhone || (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.printedPrice || undefined}>
                         {row.printedPrice || (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.printedShippingFee || undefined}>
                         {row.printedShippingFee ||
                           (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.printedTotal || undefined}>
                         {row.printedTotal || (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
                       <td className="p-1">
@@ -534,7 +534,7 @@ export default function DriverBulkPage() {
                         />
                       </td>
                       <td className="overflow-hidden p-1">
-                        <p className="mb-1 truncate text-[10px] font-semibold text-slate-500">
+                        <p className="mb-1 truncate text-[10px] font-semibold text-slate-500" title={row.currentStatus || undefined}>
                           {row.currentStatus || '—'}
                         </p>
                         <select
