@@ -50,12 +50,26 @@ interface GridRow {
 interface GridFilters {
   tracking: string;
   merchantName: string;
+  customerName: string;
   recipientGovernorate: string;
   recipientAddress: string;
   recipientPhone: string;
+  printedPrice: string;
   printedShippingFee: string;
+  printedTotal: string;
+  collectedPrice: string;
   collectedShippingFee: string;
+  collectedTotal: string;
+  selectedStatus: string;
+  note: string;
 }
+
+// Shared between the filter-row table and the label/data table so their
+// columns line up pixel-for-pixel across the two separate cards — see
+// "Why two <table>s" below.
+const columnWidths = [
+  '5%', '7%', '7%', '5%', '8%', '5%', '4%', '4%', '4%', '5%', '9%', '5%', '8%', '12%', '12%',
+];
 
 function moneyValue(value: string | undefined): number {
   const normalized = Number((value || '').replace(/[^\d.]/g, ''));
@@ -93,11 +107,18 @@ const statuses = [
 const initialFilters: GridFilters = {
   tracking: '',
   merchantName: '',
+  customerName: '',
   recipientGovernorate: '',
   recipientAddress: '',
   recipientPhone: '',
+  printedPrice: '',
   printedShippingFee: '',
+  printedTotal: '',
+  collectedPrice: '',
   collectedShippingFee: '',
+  collectedTotal: '',
+  selectedStatus: '',
+  note: '',
 };
 
 
@@ -250,6 +271,7 @@ export default function DriverBulkPage() {
       (row) =>
         row.tracking.toLocaleLowerCase().includes(normalizedFilters.tracking) &&
         row.merchantName.toLocaleLowerCase().includes(normalizedFilters.merchantName) &&
+        row.customerName.toLocaleLowerCase().includes(normalizedFilters.customerName) &&
         row.recipientGovernorate
           .toLocaleLowerCase()
           .includes(normalizedFilters.recipientGovernorate) &&
@@ -257,12 +279,18 @@ export default function DriverBulkPage() {
           .toLocaleLowerCase()
           .includes(normalizedFilters.recipientAddress) &&
         row.recipientPhone.toLocaleLowerCase().includes(normalizedFilters.recipientPhone) &&
+        row.printedPrice.toLocaleLowerCase().includes(normalizedFilters.printedPrice) &&
         row.printedShippingFee
           .toLocaleLowerCase()
           .includes(normalizedFilters.printedShippingFee) &&
+        row.printedTotal.toLocaleLowerCase().includes(normalizedFilters.printedTotal) &&
+        row.collectedPrice.toLocaleLowerCase().includes(normalizedFilters.collectedPrice) &&
         row.collectedShippingFee
           .toLocaleLowerCase()
-          .includes(normalizedFilters.collectedShippingFee)
+          .includes(normalizedFilters.collectedShippingFee) &&
+        row.collectedTotal.toLocaleLowerCase().includes(normalizedFilters.collectedTotal) &&
+        row.selectedStatus.toLocaleLowerCase().includes(normalizedFilters.selectedStatus) &&
+        row.note.toLocaleLowerCase().includes(normalizedFilters.note)
     );
   }, [filters, rows]);
 
@@ -270,7 +298,10 @@ export default function DriverBulkPage() {
   // filter's <datalist> — derived from the full row set (not visibleRows),
   // so a column's own filter options don't shrink as OTHER filters narrow
   // the table (standard multi-filter UX: each filter's option list stays
-  // stable relative to the full data set).
+  // stable relative to the full data set). Depends on `rows`, so options
+  // for the actively-edited columns (collected amounts, status, note)
+  // recompute live as the ops manager types/selects, same as the table
+  // itself does.
   const filterOptions = useMemo(() => {
     function distinct(get: (row: GridRow) => string): string[] {
       return Array.from(new Set(rows.map(get).filter((value) => value.trim() !== ''))).sort(
@@ -281,11 +312,18 @@ export default function DriverBulkPage() {
     return {
       tracking: distinct((row) => row.tracking),
       merchantName: distinct((row) => row.merchantName),
+      customerName: distinct((row) => row.customerName),
       recipientGovernorate: distinct((row) => row.recipientGovernorate),
       recipientAddress: distinct((row) => row.recipientAddress),
       recipientPhone: distinct((row) => row.recipientPhone),
+      printedPrice: distinct((row) => row.printedPrice),
       printedShippingFee: distinct((row) => row.printedShippingFee),
+      printedTotal: distinct((row) => row.printedTotal),
+      collectedPrice: distinct((row) => row.collectedPrice),
       collectedShippingFee: distinct((row) => row.collectedShippingFee),
+      collectedTotal: distinct((row) => row.collectedTotal),
+      selectedStatus: distinct((row) => row.selectedStatus),
+      note: distinct((row) => row.note),
     } satisfies Record<keyof GridFilters, string[]>;
   }, [rows]);
 
@@ -413,7 +451,11 @@ export default function DriverBulkPage() {
   // that's ALL filter controls, one that's ALL labels — guarantees every
   // label sits on the same row/baseline regardless of which columns have
   // a filter, since the label row never contains an input.
-  function renderFilterCell(key: keyof GridFilters, label: string) {
+  function renderFilterCell(
+    key: keyof GridFilters,
+    label: string,
+    optionLabel?: (value: string) => string
+  ) {
     const datalistId = `bulk-grid-filter-${key}`;
     return (
       <th className="overflow-hidden p-1" key={key}>
@@ -432,11 +474,19 @@ export default function DriverBulkPage() {
         />
         <datalist id={datalistId}>
           {filterOptions[key].map((option) => (
-            <option key={option} value={option} />
+            // `label` shows the friendly suggestion text (e.g. "قيد التوصيل"
+            // for status), `value` is what actually fills the input and is
+            // what the filter predicate matches against (the raw value,
+            // e.g. "shipped") — only differs from `option` for status.
+            <option key={option} label={optionLabel?.(option)} value={option} />
           ))}
         </datalist>
       </th>
     );
+  }
+
+  function statusLabel(value: string): string {
+    return statuses.find((status) => status.value === value)?.label ?? value;
   }
 
   if (accessState === 'forbidden') {
@@ -482,55 +532,55 @@ export default function DriverBulkPage() {
         )}
 
         {!loading && !error && rows.length > 0 && (
-          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <>
+            {/* Filter card — a separate card from the labels/data table below,
+                per request. Uses the exact same table-fixed + <colgroup>
+                percentage widths as the table below, so its columns line up
+                with the table's columns despite being visually two boxes. */}
+            <div className="mb-3 rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+              <table className="w-full table-fixed border-collapse text-right text-[11px]">
+                <colgroup>
+                  {columnWidths.map((width, index) => (
+                    <col key={index} style={{ width }} />
+                  ))}
+                </colgroup>
+                <tbody>
+                  <tr className="align-middle">
+                    {renderFilterCell('tracking', 'رقم الطلب')}
+                    {renderFilterCell('merchantName', 'التاجر')}
+                    {renderFilterCell('customerName', 'المستلم')}
+                    {renderFilterCell('recipientGovernorate', 'المحافظة')}
+                    {renderFilterCell('recipientAddress', 'العنوان')}
+                    {renderFilterCell('recipientPhone', 'رقم الهاتف')}
+                    {renderFilterCell('printedPrice', 'سعر المنتج')}
+                    {renderFilterCell('printedShippingFee', 'مصاريف الشحن')}
+                    {renderFilterCell('printedTotal', 'الإجمالي')}
+                    {renderFilterCell('collectedPrice', 'سعر المنتج المحصل')}
+                    {renderFilterCell('collectedShippingFee', 'مصاريف الشحن المحصلة')}
+                    {renderFilterCell('collectedTotal', 'الإجمالي المحصل')}
+                    {renderFilterCell('selectedStatus', 'الحالة', statusLabel)}
+                    {renderFilterCell('note', 'ملاحظات (اختياري)')}
+                    <th className="p-1" />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
             {/* table-fixed + percentage <col> widths (summing to 100%) instead of
                 fixed px min-widths — this is what guarantees the table always fits
                 the container/viewport with no horizontal scrollbar, rather than
                 just being "small enough" for one particular screen width. */}
+            <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
             <table className="w-full table-fixed border-collapse text-right text-[11px]">
               <colgroup>
-                <col style={{ width: '5%' }} />
-                <col style={{ width: '7%' }} />
-                <col style={{ width: '7%' }} />
-                <col style={{ width: '5%' }} />
-                <col style={{ width: '10%' }} />
-                <col style={{ width: '5%' }} />
-                <col style={{ width: '4%' }} />
-                <col style={{ width: '4%' }} />
-                <col style={{ width: '4%' }} />
-                <col style={{ width: '5%' }} />
-                <col style={{ width: '5%' }} />
-                <col style={{ width: '5%' }} />
-                <col style={{ width: '8%' }} />
-                <col style={{ width: '13%' }} />
-                <col style={{ width: '13%' }} />
+                {columnWidths.map((width, index) => (
+                  <col key={index} style={{ width }} />
+                ))}
               </colgroup>
               <thead className="bg-slate-100 text-[#17365F]">
-                {/* Row 1: filter controls only — blank <th> for columns with no filter,
-                    so every column still has exactly one cell here and stays aligned
-                    with its <colgroup> width. */}
-                <tr className="align-middle">
-                  {renderFilterCell('tracking', 'رقم الطلب')}
-                  {renderFilterCell('merchantName', 'التاجر')}
-                  <th className="p-1" />
-                  {renderFilterCell('recipientGovernorate', 'المحافظة')}
-                  {renderFilterCell('recipientAddress', 'العنوان')}
-                  {renderFilterCell('recipientPhone', 'رقم الهاتف')}
-                  <th className="p-1" />
-                  {renderFilterCell('printedShippingFee', 'مصاريف الشحن')}
-                  <th className="p-1" />
-                  <th className="p-1" />
-                  {renderFilterCell('collectedShippingFee', 'مصاريف الشحن المحصلة')}
-                  <th className="p-1" />
-                  <th className="p-1" />
-                  <th className="p-1" />
-                  <th className="p-1" />
-                </tr>
-                {/* Row 2: every column's label, all in one row, fully visible (no
+                {/* Every column's label, all in one row, fully visible (no
                     truncation) — wraps to a second line within its own column
-                    width instead of clipping, so nothing is hidden. This row
-                    never contains an input, so every label sits on the same
-                    baseline regardless of which columns above have a filter. */}
+                    width instead of clipping, so nothing is hidden. */}
                 <tr className="align-top">
                   <th className="break-words border-b border-slate-200 p-1 font-bold">رقم الطلب</th>
                   <th className="break-words border-b border-slate-200 p-1 font-bold">التاجر</th>
@@ -698,7 +748,8 @@ export default function DriverBulkPage() {
                 لا توجد طلبات تطابق عوامل التصفية.
               </p>
             )}
-          </div>
+            </div>
+          </>
         )}
       </section>
     </main>
