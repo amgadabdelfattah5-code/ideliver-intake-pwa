@@ -452,9 +452,9 @@ export default function DriverBulkPage() {
                   <th className="min-w-36 border-b border-slate-200 p-2">سعر المنتج</th>
                   <th className="min-w-36 border-b border-slate-200 p-2">مصاريف الشحن</th>
                   <th className="min-w-36 border-b border-slate-200 p-2">الإجمالي</th>
-                  <th className="min-w-[43px] border-b border-slate-200 p-2">سعر المنتج المحصل</th>
-                  <th className="min-w-[43px] border-b border-slate-200 p-2">مصاريف الشحن المحصلة</th>
-                  <th className="min-w-[43px] border-b border-slate-200 p-2">الإجمالي المحصل</th>
+                  <th className="min-w-[72px] border-b border-slate-200 p-2">سعر المنتج المحصل</th>
+                  <th className="min-w-[72px] border-b border-slate-200 p-2">مصاريف الشحن المحصلة</th>
+                  <th className="min-w-[72px] border-b border-slate-200 p-2">الإجمالي المحصل</th>
                   <th className="min-w-40 border-b border-slate-200 p-2">الحالة</th>
                   <th className="min-w-52 border-b border-slate-200 p-2">ملاحظات (اختياري)</th>
                   <th className="min-w-56 border-b border-slate-200 p-2">—</th>
