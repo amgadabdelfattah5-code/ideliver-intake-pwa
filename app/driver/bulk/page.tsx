@@ -190,7 +190,12 @@ export default function DriverBulkPage() {
 
             return {
               orderId: order.orderId,
-              tracking: order.tracking,
+              // The real order number, matching what the per-order driver
+              // page shows (`أوردر #{orderId}`) — NOT the synthetic
+              // `LS-000012924`-style tracking string WP's API also
+              // returns, which was shown here before and doesn't match
+              // what drivers/ops actually recognize as "the order number."
+              tracking: String(order.orderId),
               customerName: order.customerName,
               merchantName: order.merchantName,
               recipientAddress: '',
