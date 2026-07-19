@@ -50,10 +50,11 @@ interface GridRow {
 interface GridFilters {
   tracking: string;
   merchantName: string;
-  customerName: string;
   recipientGovernorate: string;
   recipientAddress: string;
   recipientPhone: string;
+  printedShippingFee: string;
+  collectedShippingFee: string;
 }
 
 function moneyValue(value: string | undefined): number {
@@ -92,11 +93,13 @@ const statuses = [
 const initialFilters: GridFilters = {
   tracking: '',
   merchantName: '',
-  customerName: '',
   recipientGovernorate: '',
   recipientAddress: '',
   recipientPhone: '',
+  printedShippingFee: '',
+  collectedShippingFee: '',
 };
+
 
 export default function DriverBulkPage() {
   const [rows, setRows] = useState<GridRow[]>([]);
@@ -247,16 +250,44 @@ export default function DriverBulkPage() {
       (row) =>
         row.tracking.toLocaleLowerCase().includes(normalizedFilters.tracking) &&
         row.merchantName.toLocaleLowerCase().includes(normalizedFilters.merchantName) &&
-        row.customerName.toLocaleLowerCase().includes(normalizedFilters.customerName) &&
         row.recipientGovernorate
           .toLocaleLowerCase()
           .includes(normalizedFilters.recipientGovernorate) &&
         row.recipientAddress
           .toLocaleLowerCase()
           .includes(normalizedFilters.recipientAddress) &&
-        row.recipientPhone.toLocaleLowerCase().includes(normalizedFilters.recipientPhone)
+        row.recipientPhone.toLocaleLowerCase().includes(normalizedFilters.recipientPhone) &&
+        row.printedShippingFee
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.printedShippingFee) &&
+        row.collectedShippingFee
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.collectedShippingFee)
     );
   }, [filters, rows]);
+
+  // Distinct, sorted values per filterable column, used to populate each
+  // filter's <datalist> — derived from the full row set (not visibleRows),
+  // so a column's own filter options don't shrink as OTHER filters narrow
+  // the table (standard multi-filter UX: each filter's option list stays
+  // stable relative to the full data set).
+  const filterOptions = useMemo(() => {
+    function distinct(get: (row: GridRow) => string): string[] {
+      return Array.from(new Set(rows.map(get).filter((value) => value.trim() !== ''))).sort(
+        (a, b) => a.localeCompare(b, 'ar')
+      );
+    }
+
+    return {
+      tracking: distinct((row) => row.tracking),
+      merchantName: distinct((row) => row.merchantName),
+      recipientGovernorate: distinct((row) => row.recipientGovernorate),
+      recipientAddress: distinct((row) => row.recipientAddress),
+      recipientPhone: distinct((row) => row.recipientPhone),
+      printedShippingFee: distinct((row) => row.printedShippingFee),
+      collectedShippingFee: distinct((row) => row.collectedShippingFee),
+    } satisfies Record<keyof GridFilters, string[]>;
+  }, [rows]);
 
   function updateRow(orderId: number, update: (row: GridRow) => GridRow) {
     setRows((previousRows) =>
@@ -373,6 +404,40 @@ export default function DriverBulkPage() {
     }
   }
 
+  // Filter control above the column label (per request), backed by a
+  // <datalist> so it's both freely searchable (typing narrows/filters like
+  // a plain text field) and a dropdown (clicking/focusing shows the full
+  // list of distinct values present in the data) — native HTML, no new
+  // dependency needed for a searchable-dropdown-like control.
+  function renderFilterHeader(key: keyof GridFilters, label: string) {
+    const datalistId = `bulk-grid-filter-${key}`;
+    return (
+      <th className="overflow-hidden border-b border-slate-200 p-1" key={key}>
+        <label className="block font-bold">
+          <input
+            aria-label={`تصفية حسب ${label}`}
+            className="h-7 w-full min-w-0 rounded border border-slate-300 bg-white px-1 font-medium text-slate-800 outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+            list={datalistId}
+            onChange={(event) =>
+              setFilters((currentFilters) => ({
+                ...currentFilters,
+                [key]: event.target.value,
+              }))
+            }
+            placeholder="تصفية..."
+            value={filters[key]}
+          />
+          <datalist id={datalistId}>
+            {filterOptions[key].map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+          <span className="mt-1 block truncate">{label}</span>
+        </label>
+      </th>
+    );
+  }
+
   if (accessState === 'forbidden') {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-4 text-[#17365F]">
@@ -441,39 +506,17 @@ export default function DriverBulkPage() {
               </colgroup>
               <thead className="bg-slate-100 text-[#17365F]">
                 <tr className="align-top">
-                  {(
-                    [
-                      ['tracking', 'رقم الطلب'],
-                      ['merchantName', 'التاجر'],
-                      ['customerName', 'المستلم'],
-                      ['recipientGovernorate', 'المحافظة'],
-                      ['recipientAddress', 'العنوان'],
-                      ['recipientPhone', 'رقم الهاتف'],
-                    ] as Array<[keyof GridFilters, string]>
-                  ).map(([key, label]) => (
-                    <th className="overflow-hidden border-b border-slate-200 p-1" key={key}>
-                      <label className="block font-bold">
-                        {label}
-                        <input
-                          aria-label={`تصفية حسب ${label}`}
-                          className="mt-1 h-7 w-full min-w-0 rounded border border-slate-300 bg-white px-1 font-medium text-slate-800 outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
-                          onChange={(event) =>
-                            setFilters((currentFilters) => ({
-                              ...currentFilters,
-                              [key]: event.target.value,
-                            }))
-                          }
-                          placeholder="تصفية..."
-                          value={filters[key]}
-                        />
-                      </label>
-                    </th>
-                  ))}
+                  {renderFilterHeader('tracking', 'رقم الطلب')}
+                  {renderFilterHeader('merchantName', 'التاجر')}
+                  <th className="overflow-hidden border-b border-slate-200 p-1">المستلم</th>
+                  {renderFilterHeader('recipientGovernorate', 'المحافظة')}
+                  {renderFilterHeader('recipientAddress', 'العنوان')}
+                  {renderFilterHeader('recipientPhone', 'رقم الهاتف')}
                   <th className="overflow-hidden border-b border-slate-200 p-1">سعر المنتج</th>
-                  <th className="overflow-hidden border-b border-slate-200 p-1">مصاريف الشحن</th>
+                  {renderFilterHeader('printedShippingFee', 'مصاريف الشحن')}
                   <th className="overflow-hidden border-b border-slate-200 p-1">الإجمالي</th>
                   <th className="overflow-hidden border-b border-slate-200 p-1">سعر المنتج المحصل</th>
-                  <th className="overflow-hidden border-b border-slate-200 p-1">مصاريف الشحن المحصلة</th>
+                  {renderFilterHeader('collectedShippingFee', 'مصاريف الشحن المحصلة')}
                   <th className="overflow-hidden border-b border-slate-200 p-1">الإجمالي المحصل</th>
                   <th className="overflow-hidden border-b border-slate-200 p-1">الحالة</th>
                   <th className="overflow-hidden border-b border-slate-200 p-1">ملاحظات (اختياري)</th>
@@ -539,9 +582,6 @@ export default function DriverBulkPage() {
                         />
                       </td>
                       <td className="overflow-hidden p-1">
-                        <p className="mb-1 truncate text-[10px] font-semibold text-slate-500" title={row.currentStatus || undefined}>
-                          {row.currentStatus || '—'}
-                        </p>
                         <select
                           aria-label={`الحالة الجديدة للطلب ${row.tracking}`}
                           className="h-7 w-full min-w-0 rounded border border-slate-300 bg-white px-1 font-semibold text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
@@ -564,23 +604,30 @@ export default function DriverBulkPage() {
                         </select>
                       </td>
                       <td className="overflow-hidden p-1">
-                        {row.originalNote.trim() && (
-                          <p className="mb-1 whitespace-pre-wrap break-words text-[10px] leading-4 text-slate-500">
-                            {row.originalNote}
-                          </p>
-                        )}
-                        <textarea
-                          aria-label={`ملاحظات الطلب ${row.tracking}`}
-                          className="min-h-10 w-full min-w-0 resize-y rounded border border-slate-300 bg-white p-1 font-medium text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
-                          disabled={sending}
-                          onChange={(event) =>
-                            updateRow(row.orderId, (currentRow) => ({
-                              ...currentRow,
-                              note: event.target.value,
-                            }))
-                          }
-                          value={row.note}
-                        />
+                        {/* Same card treatment as the per-order driver page's
+                            ملاحظات (اختياري) block — a bordered/shaded box
+                            containing the read-only original note above the
+                            editable textarea, instead of the two floating
+                            loose in the cell. */}
+                        <div className="rounded border border-slate-200 bg-slate-50 p-1">
+                          {row.originalNote.trim() && (
+                            <p className="mb-1 whitespace-pre-wrap break-words text-[10px] leading-4 text-slate-500">
+                              {row.originalNote}
+                            </p>
+                          )}
+                          <textarea
+                            aria-label={`ملاحظات الطلب ${row.tracking}`}
+                            className="min-h-10 w-full min-w-0 resize-y rounded border-none bg-transparent p-0 font-medium text-slate-800 outline-none disabled:bg-slate-100"
+                            disabled={sending}
+                            onChange={(event) =>
+                              updateRow(row.orderId, (currentRow) => ({
+                                ...currentRow,
+                                note: event.target.value,
+                              }))
+                            }
+                            value={row.note}
+                          />
+                        </div>
                       </td>
                       <td className="overflow-hidden p-1">
                         <button
