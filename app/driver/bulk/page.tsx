@@ -411,8 +411,29 @@ export default function DriverBulkPage() {
         )}
 
         {!loading && !error && rows.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-            <table className="w-full min-w-[2500px] border-collapse text-right text-xs">
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+            {/* table-fixed + percentage <col> widths (summing to 100%) instead of
+                fixed px min-widths — this is what guarantees the table always fits
+                the container/viewport with no horizontal scrollbar, rather than
+                just being "small enough" for one particular screen width. */}
+            <table className="w-full table-fixed border-collapse text-right text-[11px]">
+              <colgroup>
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '7%' }} />
+                <col style={{ width: '7%' }} />
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '4%' }} />
+                <col style={{ width: '4%' }} />
+                <col style={{ width: '4%' }} />
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '13%' }} />
+              </colgroup>
               <thead className="bg-slate-100 text-[#17365F]">
                 <tr className="align-top">
                   {(
@@ -425,18 +446,12 @@ export default function DriverBulkPage() {
                       ['recipientPhone', 'رقم الهاتف'],
                     ] as Array<[keyof GridFilters, string]>
                   ).map(([key, label]) => (
-                    <th
-                      className={
-                        (key === 'recipientPhone' ? 'min-w-[72px]' : 'min-w-36') +
-                        ' border-b border-slate-200 p-2'
-                      }
-                      key={key}
-                    >
+                    <th className="overflow-hidden border-b border-slate-200 p-1" key={key}>
                       <label className="block font-bold">
                         {label}
                         <input
                           aria-label={`تصفية حسب ${label}`}
-                          className="mt-2 h-8 w-full rounded border border-slate-300 bg-white px-2 font-medium text-slate-800 outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+                          className="mt-1 h-7 w-full rounded border border-slate-300 bg-white px-1 font-medium text-slate-800 outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
                           onChange={(event) =>
                             setFilters((currentFilters) => ({
                               ...currentFilters,
@@ -449,15 +464,15 @@ export default function DriverBulkPage() {
                       </label>
                     </th>
                   ))}
-                  <th className="min-w-36 border-b border-slate-200 p-2">سعر المنتج</th>
-                  <th className="min-w-36 border-b border-slate-200 p-2">مصاريف الشحن</th>
-                  <th className="min-w-36 border-b border-slate-200 p-2">الإجمالي</th>
-                  <th className="min-w-[72px] border-b border-slate-200 p-2">سعر المنتج المحصل</th>
-                  <th className="min-w-[72px] border-b border-slate-200 p-2">مصاريف الشحن المحصلة</th>
-                  <th className="min-w-[72px] border-b border-slate-200 p-2">الإجمالي المحصل</th>
-                  <th className="min-w-40 border-b border-slate-200 p-2">الحالة</th>
-                  <th className="min-w-52 border-b border-slate-200 p-2">ملاحظات (اختياري)</th>
-                  <th className="min-w-56 border-b border-slate-200 p-2">—</th>
+                  <th className="overflow-hidden border-b border-slate-200 p-1">سعر المنتج</th>
+                  <th className="overflow-hidden border-b border-slate-200 p-1">مصاريف الشحن</th>
+                  <th className="overflow-hidden border-b border-slate-200 p-1">الإجمالي</th>
+                  <th className="overflow-hidden border-b border-slate-200 p-1">سعر المنتج المحصل</th>
+                  <th className="overflow-hidden border-b border-slate-200 p-1">مصاريف الشحن المحصلة</th>
+                  <th className="overflow-hidden border-b border-slate-200 p-1">الإجمالي المحصل</th>
+                  <th className="overflow-hidden border-b border-slate-200 p-1">الحالة</th>
+                  <th className="overflow-hidden border-b border-slate-200 p-1">ملاحظات (اختياري)</th>
+                  <th className="overflow-hidden border-b border-slate-200 p-1">—</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -465,66 +480,66 @@ export default function DriverBulkPage() {
                   const sending = row.submitState === 'sending';
                   return (
                     <tr className="align-top" key={row.orderId}>
-                      <td className="p-2 font-bold text-slate-800">{row.tracking || '—'}</td>
-                      <td className="p-2 font-semibold text-slate-700">{row.merchantName || '—'}</td>
-                      <td className="p-2 font-semibold text-slate-700">{row.customerName || '—'}</td>
-                      <td className="p-2 font-semibold text-slate-700">
+                      <td className="overflow-hidden p-1 font-bold text-slate-800">{row.tracking || '—'}</td>
+                      <td className="overflow-hidden p-1 font-semibold text-slate-700">{row.merchantName || '—'}</td>
+                      <td className="overflow-hidden p-1 font-semibold text-slate-700">{row.customerName || '—'}</td>
+                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
                         {row.recipientGovernorate ||
                           (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="p-2 whitespace-pre-wrap break-words font-semibold text-slate-700">
+                      <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700">
                         {row.recipientAddress || (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="p-2 font-semibold text-slate-700">
+                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
                         {row.recipientPhone || (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="p-2 font-semibold text-slate-700">
+                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
                         {row.printedPrice || (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="p-2 font-semibold text-slate-700">
+                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
                         {row.printedShippingFee ||
                           (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="p-2 font-semibold text-slate-700">
+                      <td className="overflow-hidden p-1 font-semibold text-slate-700">
                         {row.printedTotal || (dataEntriesLoadState === 'loading' ? '…' : '')}
                       </td>
-                      <td className="p-2">
+                      <td className="p-1">
                         <input
                           aria-label={`سعر المنتج المحصل للطلب ${row.tracking}`}
-                          className="h-9 w-full rounded border border-amber-300 bg-amber-50 px-2 font-semibold text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/30 disabled:bg-slate-100"
+                          className="h-7 w-full min-w-0 rounded border border-amber-300 bg-amber-50 px-1 font-semibold text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/30 disabled:bg-slate-100"
                           disabled={sending}
                           inputMode="numeric"
                           onChange={(event) => updatePrice(row.orderId, event.target.value)}
                           value={row.collectedPrice}
                         />
                       </td>
-                      <td className="p-2">
+                      <td className="p-1">
                         <input
                           aria-label={`مصاريف الشحن المحصلة للطلب ${row.tracking}`}
-                          className="h-9 w-full rounded border border-amber-300 bg-amber-50 px-2 font-semibold text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/30 disabled:bg-slate-100"
+                          className="h-7 w-full min-w-0 rounded border border-amber-300 bg-amber-50 px-1 font-semibold text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/30 disabled:bg-slate-100"
                           disabled={sending}
                           inputMode="numeric"
                           onChange={(event) => updateShippingFee(row.orderId, event.target.value)}
                           value={row.collectedShippingFee}
                         />
                       </td>
-                      <td className="p-2">
+                      <td className="p-1">
                         <input
                           aria-label={`الإجمالي المحصل للطلب ${row.tracking}`}
-                          className="h-9 w-full rounded border border-amber-300 bg-amber-50 px-2 font-semibold text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/30 disabled:bg-slate-100"
+                          className="h-7 w-full min-w-0 rounded border border-amber-300 bg-amber-50 px-1 font-semibold text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/30 disabled:bg-slate-100"
                           disabled={sending}
                           inputMode="numeric"
                           onChange={(event) => updateTotal(row.orderId, event.target.value)}
                           value={row.collectedTotal}
                         />
                       </td>
-                      <td className="p-2">
-                        <p className="mb-1 text-[11px] font-semibold text-slate-500">
+                      <td className="overflow-hidden p-1">
+                        <p className="mb-1 truncate text-[10px] font-semibold text-slate-500">
                           {row.currentStatus || '—'}
                         </p>
                         <select
                           aria-label={`الحالة الجديدة للطلب ${row.tracking}`}
-                          className="h-9 w-full rounded border border-slate-300 bg-white px-2 font-semibold text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
+                          className="h-7 w-full min-w-0 rounded border border-slate-300 bg-white px-1 font-semibold text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
                           disabled={sending}
                           onChange={(event) =>
                             updateRow(row.orderId, (currentRow) => ({
@@ -543,15 +558,15 @@ export default function DriverBulkPage() {
                           ))}
                         </select>
                       </td>
-                      <td className="p-2">
+                      <td className="overflow-hidden p-1">
                         {row.originalNote.trim() && (
-                          <p className="mb-1 whitespace-pre-wrap break-words text-[11px] leading-4 text-slate-500">
+                          <p className="mb-1 whitespace-pre-wrap break-words text-[10px] leading-4 text-slate-500">
                             {row.originalNote}
                           </p>
                         )}
                         <textarea
                           aria-label={`ملاحظات الطلب ${row.tracking}`}
-                          className="min-h-16 w-full resize-y rounded border border-slate-300 bg-white p-2 font-medium text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
+                          className="min-h-10 w-full min-w-0 resize-y rounded border border-slate-300 bg-white p-1 font-medium text-slate-800 outline-none focus:border-[#F27321] disabled:bg-slate-100"
                           disabled={sending}
                           onChange={(event) =>
                             updateRow(row.orderId, (currentRow) => ({
@@ -562,9 +577,9 @@ export default function DriverBulkPage() {
                           value={row.note}
                         />
                       </td>
-                      <td className="p-2">
+                      <td className="overflow-hidden p-1">
                         <button
-                          className="idv-button idv-button-small w-full text-xs"
+                          className="idv-button idv-button-small w-full text-[11px]"
                           disabled={sending || !row.selectedStatus}
                           onClick={() => void submitRow(row)}
                           type="button"
@@ -572,12 +587,12 @@ export default function DriverBulkPage() {
                           {sending ? 'جاري الإرسال...' : 'تسجيل الزيارة'}
                         </button>
                         {!row.selectedStatus && !row.error && (
-                          <p className="mt-2 text-[11px] font-semibold text-slate-500">
+                          <p className="mt-1 text-[10px] font-semibold text-slate-500">
                             يرجى اختيار الحالة
                           </p>
                         )}
                         {row.error && (
-                          <p className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700">
+                          <p className="mt-1 rounded border border-red-200 bg-red-50 px-1 py-1 text-[10px] font-semibold text-red-700">
                             {row.error}
                           </p>
                         )}
@@ -587,7 +602,7 @@ export default function DriverBulkPage() {
                               (row.messageSynced
                                 ? 'border-green-200 bg-green-50 text-green-700'
                                 : 'border-amber-200 bg-amber-50 text-amber-800') +
-                              ' mt-2 rounded border px-2 py-1 text-[11px] font-semibold'
+                              ' mt-1 rounded border px-1 py-1 text-[10px] font-semibold'
                             }
                           >
                             {row.message}
