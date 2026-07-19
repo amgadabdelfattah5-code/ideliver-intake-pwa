@@ -404,36 +404,37 @@ export default function DriverBulkPage() {
     }
   }
 
-  // Filter control above the column label (per request), backed by a
-  // <datalist> so it's both freely searchable (typing narrows/filters like
-  // a plain text field) and a dropdown (clicking/focusing shows the full
-  // list of distinct values present in the data) — native HTML, no new
-  // dependency needed for a searchable-dropdown-like control.
-  function renderFilterHeader(key: keyof GridFilters, label: string) {
+  // Header is split into two <tr> rows (see JSX below) instead of stacking
+  // the filter input and label inside one <th>: mixing "cells with an
+  // input + label" and "cells with just label text" in a single row means
+  // the plain cells' text and the filtered cells' text land at different
+  // heights (the input pushes the filtered cells' label down), which is
+  // exactly the misalignment the user reported. Two separate rows — one
+  // that's ALL filter controls, one that's ALL labels — guarantees every
+  // label sits on the same row/baseline regardless of which columns have
+  // a filter, since the label row never contains an input.
+  function renderFilterCell(key: keyof GridFilters, label: string) {
     const datalistId = `bulk-grid-filter-${key}`;
     return (
-      <th className="overflow-hidden border-b border-slate-200 p-1" key={key}>
-        <label className="block font-bold">
-          <input
-            aria-label={`تصفية حسب ${label}`}
-            className="h-7 w-full min-w-0 rounded border border-slate-300 bg-white px-1 font-medium text-slate-800 outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
-            list={datalistId}
-            onChange={(event) =>
-              setFilters((currentFilters) => ({
-                ...currentFilters,
-                [key]: event.target.value,
-              }))
-            }
-            placeholder="تصفية..."
-            value={filters[key]}
-          />
-          <datalist id={datalistId}>
-            {filterOptions[key].map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-          <span className="mt-1 block truncate">{label}</span>
-        </label>
+      <th className="overflow-hidden p-1" key={key}>
+        <input
+          aria-label={`تصفية حسب ${label}`}
+          className="h-7 w-full min-w-0 rounded border border-slate-300 bg-white px-1 font-medium text-slate-800 outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+          list={datalistId}
+          onChange={(event) =>
+            setFilters((currentFilters) => ({
+              ...currentFilters,
+              [key]: event.target.value,
+            }))
+          }
+          placeholder="تصفية..."
+          value={filters[key]}
+        />
+        <datalist id={datalistId}>
+          {filterOptions[key].map((option) => (
+            <option key={option} value={option} />
+          ))}
+        </datalist>
       </th>
     );
   }
@@ -505,22 +506,47 @@ export default function DriverBulkPage() {
                 <col style={{ width: '13%' }} />
               </colgroup>
               <thead className="bg-slate-100 text-[#17365F]">
+                {/* Row 1: filter controls only — blank <th> for columns with no filter,
+                    so every column still has exactly one cell here and stays aligned
+                    with its <colgroup> width. */}
+                <tr className="align-middle">
+                  {renderFilterCell('tracking', 'رقم الطلب')}
+                  {renderFilterCell('merchantName', 'التاجر')}
+                  <th className="p-1" />
+                  {renderFilterCell('recipientGovernorate', 'المحافظة')}
+                  {renderFilterCell('recipientAddress', 'العنوان')}
+                  {renderFilterCell('recipientPhone', 'رقم الهاتف')}
+                  <th className="p-1" />
+                  {renderFilterCell('printedShippingFee', 'مصاريف الشحن')}
+                  <th className="p-1" />
+                  <th className="p-1" />
+                  {renderFilterCell('collectedShippingFee', 'مصاريف الشحن المحصلة')}
+                  <th className="p-1" />
+                  <th className="p-1" />
+                  <th className="p-1" />
+                  <th className="p-1" />
+                </tr>
+                {/* Row 2: every column's label, all in one row, fully visible (no
+                    truncation) — wraps to a second line within its own column
+                    width instead of clipping, so nothing is hidden. This row
+                    never contains an input, so every label sits on the same
+                    baseline regardless of which columns above have a filter. */}
                 <tr className="align-top">
-                  {renderFilterHeader('tracking', 'رقم الطلب')}
-                  {renderFilterHeader('merchantName', 'التاجر')}
-                  <th className="overflow-hidden border-b border-slate-200 p-1">المستلم</th>
-                  {renderFilterHeader('recipientGovernorate', 'المحافظة')}
-                  {renderFilterHeader('recipientAddress', 'العنوان')}
-                  {renderFilterHeader('recipientPhone', 'رقم الهاتف')}
-                  <th className="overflow-hidden border-b border-slate-200 p-1">سعر المنتج</th>
-                  {renderFilterHeader('printedShippingFee', 'مصاريف الشحن')}
-                  <th className="overflow-hidden border-b border-slate-200 p-1">الإجمالي</th>
-                  <th className="overflow-hidden border-b border-slate-200 p-1">سعر المنتج المحصل</th>
-                  {renderFilterHeader('collectedShippingFee', 'مصاريف الشحن المحصلة')}
-                  <th className="overflow-hidden border-b border-slate-200 p-1">الإجمالي المحصل</th>
-                  <th className="overflow-hidden border-b border-slate-200 p-1">الحالة</th>
-                  <th className="overflow-hidden border-b border-slate-200 p-1">ملاحظات (اختياري)</th>
-                  <th className="overflow-hidden border-b border-slate-200 p-1">—</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">رقم الطلب</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">التاجر</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">المستلم</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">المحافظة</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">العنوان</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">رقم الهاتف</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">سعر المنتج</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">مصاريف الشحن</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">الإجمالي</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">سعر المنتج المحصل</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">مصاريف الشحن المحصلة</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">الإجمالي المحصل</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">الحالة</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">ملاحظات (اختياري)</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">—</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
