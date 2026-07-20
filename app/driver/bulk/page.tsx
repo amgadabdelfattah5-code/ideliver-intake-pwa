@@ -36,7 +36,9 @@ interface GridRow {
   selectedStatus: string;
   note: string;
   collectedPrice: string;
+  productPriceRecipient: string;
   collectedShippingFee: string;
+  shippingFeeRecipient: string;
   collectedTotal: string;
   collectedPricingMode: 'sum' | 'fromTotal';
   originalNote: string;
@@ -58,7 +60,9 @@ interface GridFilters {
   printedShippingFee: string;
   printedTotal: string;
   collectedPrice: string;
+  productPriceRecipient: string;
   collectedShippingFee: string;
+  shippingFeeRecipient: string;
   collectedTotal: string;
   selectedStatus: string;
   note: string;
@@ -68,7 +72,7 @@ interface GridFilters {
 // columns line up pixel-for-pixel across the two separate cards — see
 // "Why two <table>s" below.
 const columnWidths = [
-  '5%', '7%', '7%', '5%', '8%', '5%', '4%', '4%', '4%', '5%', '9%', '5%', '8%', '12%', '12%',
+  '5%', '6%', '6%', '4%', '6%', '5%', '4%', '4%', '4%', '5%', '7%', '7%', '7%', '5%', '7%', '10%', '8%',
 ];
 
 function moneyValue(value: string | undefined): number {
@@ -102,6 +106,15 @@ const statuses = [
   { value: 'postponed', label: 'مؤجل' },
   { value: 'cancelled', label: 'ملغي' },
   { value: 'failed', label: 'فشل التوصيل' },
+  { value: 'returned-full', label: 'مرتجع كامل' },
+  { value: 'returned-partial', label: 'مرتجع جزئي' },
+];
+
+const recipients = [
+  { value: 'us_cash', label: 'نقدي — لنا' },
+  { value: 'us_transfer', label: 'تحويل — لنا' },
+  { value: 'merchant_transfer', label: 'تحويل — للتاجر' },
+  { value: 'not_paid', label: 'لم يُدفع' },
 ];
 
 const initialFilters: GridFilters = {
@@ -115,7 +128,9 @@ const initialFilters: GridFilters = {
   printedShippingFee: '',
   printedTotal: '',
   collectedPrice: '',
+  productPriceRecipient: '',
   collectedShippingFee: '',
+  shippingFeeRecipient: '',
   collectedTotal: '',
   selectedStatus: '',
   note: '',
@@ -232,7 +247,9 @@ export default function DriverBulkPage() {
               selectedStatus: currentStatusIsSelectable ? order.status : '',
               note: '',
               collectedPrice: '',
+              productPriceRecipient: 'us_cash',
               collectedShippingFee: '',
+              shippingFeeRecipient: 'us_cash',
               collectedTotal: '',
               collectedPricingMode: 'sum',
               originalNote: '',
@@ -285,9 +302,15 @@ export default function DriverBulkPage() {
           .includes(normalizedFilters.printedShippingFee) &&
         row.printedTotal.toLocaleLowerCase().includes(normalizedFilters.printedTotal) &&
         row.collectedPrice.toLocaleLowerCase().includes(normalizedFilters.collectedPrice) &&
+        row.productPriceRecipient
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.productPriceRecipient) &&
         row.collectedShippingFee
           .toLocaleLowerCase()
           .includes(normalizedFilters.collectedShippingFee) &&
+        row.shippingFeeRecipient
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.shippingFeeRecipient) &&
         row.collectedTotal.toLocaleLowerCase().includes(normalizedFilters.collectedTotal) &&
         row.selectedStatus.toLocaleLowerCase().includes(normalizedFilters.selectedStatus) &&
         row.note.toLocaleLowerCase().includes(normalizedFilters.note)
@@ -320,7 +343,9 @@ export default function DriverBulkPage() {
       printedShippingFee: distinct((row) => row.printedShippingFee),
       printedTotal: distinct((row) => row.printedTotal),
       collectedPrice: distinct((row) => row.collectedPrice),
+      productPriceRecipient: distinct((row) => row.productPriceRecipient),
       collectedShippingFee: distinct((row) => row.collectedShippingFee),
+      shippingFeeRecipient: distinct((row) => row.shippingFeeRecipient),
       collectedTotal: distinct((row) => row.collectedTotal),
       selectedStatus: distinct((row) => row.selectedStatus),
       note: distinct((row) => row.note),
@@ -404,7 +429,9 @@ export default function DriverBulkPage() {
           reasonCode: 'not_provided',
           note: row.note || undefined,
           collectedPrice: row.collectedPrice || undefined,
+          productPriceRecipient: row.productPriceRecipient,
           collectedShippingFee: row.collectedShippingFee || undefined,
+          shippingFeeRecipient: row.shippingFeeRecipient,
           collectedTotal: row.collectedTotal || undefined,
         }),
       });
@@ -489,6 +516,10 @@ export default function DriverBulkPage() {
     return statuses.find((status) => status.value === value)?.label ?? value;
   }
 
+  function recipientLabel(value: string): string {
+    return recipients.find((recipient) => recipient.value === value)?.label ?? value;
+  }
+
   if (accessState === 'forbidden') {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-4 text-[#17365F]">
@@ -560,7 +591,9 @@ export default function DriverBulkPage() {
                     {renderFilterCell('printedShippingFee', 'مصاريف الشحن')}
                     {renderFilterCell('printedTotal', 'الإجمالي')}
                     {renderFilterCell('collectedPrice', 'سعر المنتج المحصل')}
+                    {renderFilterCell('productPriceRecipient', 'مستلم سعر المنتج', recipientLabel)}
                     {renderFilterCell('collectedShippingFee', 'مصاريف الشحن المحصلة')}
+                    {renderFilterCell('shippingFeeRecipient', 'مستلم الشحن', recipientLabel)}
                     {renderFilterCell('collectedTotal', 'الإجمالي المحصل')}
                     {renderFilterCell('selectedStatus', 'الحالة', statusLabel)}
                     {renderFilterCell('note', 'ملاحظات (اختياري)')}
@@ -596,7 +629,9 @@ export default function DriverBulkPage() {
                   <th className="break-words border-b border-slate-200 p-1 font-bold">مصاريف الشحن</th>
                   <th className="break-words border-b border-slate-200 p-1 font-bold">الإجمالي</th>
                   <th className="break-words border-b border-slate-200 p-1 font-bold">سعر المنتج المحصل</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">مستلم سعر المنتج</th>
                   <th className="break-words border-b border-slate-200 p-1 font-bold">مصاريف الشحن المحصلة</th>
+                  <th className="break-words border-b border-slate-200 p-1 font-bold">مستلم الشحن</th>
                   <th className="break-words border-b border-slate-200 p-1 font-bold">الإجمالي المحصل</th>
                   <th className="break-words border-b border-slate-200 p-1 font-bold">الحالة</th>
                   <th className="break-words border-b border-slate-200 p-1 font-bold">ملاحظات (اختياري)</th>
@@ -641,6 +676,26 @@ export default function DriverBulkPage() {
                           value={row.collectedPrice}
                         />
                       </td>
+                      <td className="min-w-0 overflow-hidden p-1">
+                        <select
+                          aria-label="مستلم سعر المنتج"
+                          className="h-7 w-full min-w-0 max-w-full rounded border border-amber-300 bg-amber-50 px-1 font-semibold text-slate-800 outline-none focus:border-amber-500 disabled:bg-slate-100"
+                          disabled={sending}
+                          onChange={(event) =>
+                            updateRow(row.orderId, (currentRow) => ({
+                              ...currentRow,
+                              productPriceRecipient: event.target.value,
+                            }))
+                          }
+                          value={row.productPriceRecipient}
+                        >
+                          {recipients.map((recipient) => (
+                            <option key={recipient.value} value={recipient.value}>
+                              {recipient.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
                       <td className="p-1">
                         <input
                           aria-label={`مصاريف الشحن المحصلة للطلب ${row.tracking}`}
@@ -650,6 +705,26 @@ export default function DriverBulkPage() {
                           onChange={(event) => updateShippingFee(row.orderId, event.target.value)}
                           value={row.collectedShippingFee}
                         />
+                      </td>
+                      <td className="min-w-0 overflow-hidden p-1">
+                        <select
+                          aria-label="مستلم الشحن"
+                          className="h-7 w-full min-w-0 max-w-full rounded border border-amber-300 bg-amber-50 px-1 font-semibold text-slate-800 outline-none focus:border-amber-500 disabled:bg-slate-100"
+                          disabled={sending}
+                          onChange={(event) =>
+                            updateRow(row.orderId, (currentRow) => ({
+                              ...currentRow,
+                              shippingFeeRecipient: event.target.value,
+                            }))
+                          }
+                          value={row.shippingFeeRecipient}
+                        >
+                          {recipients.map((recipient) => (
+                            <option key={recipient.value} value={recipient.value}>
+                              {recipient.label}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="p-1">
                         <input

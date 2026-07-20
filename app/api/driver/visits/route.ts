@@ -14,6 +14,8 @@ const allowedStatuses = [
   'postponed',
   'cancelled',
   'failed',
+  'returned-full',
+  'returned-partial',
 ];
 
 const allowedReasons = [
@@ -23,6 +25,14 @@ const allowedReasons = [
   'wrong_address',
   'postponed',
   'not_provided',
+  'returned',
+];
+
+const allowedRecipients = [
+  'us_cash',
+  'us_transfer',
+  'merchant_transfer',
+  'not_paid',
 ];
 
 interface VisitPhoto {
@@ -100,6 +110,14 @@ function parseMoneyOrUndefined(value: unknown): string | undefined {
   return withoutCommas; // canonical, comma-free — this exact value is what
                          // gets stored locally AND forwarded to WP; no
                          // second normalization step anywhere downstream.
+}
+
+function parseRecipientOrUndefined(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value !== 'string' || !allowedRecipients.includes(value)) {
+    throw new Error('invalid_recipient_field');
+  }
+  return value;
 }
 
 function parseLocationUrlOrUndefined(value: unknown): string | undefined {
@@ -191,15 +209,26 @@ export async function POST(req: NextRequest) {
   let collectedPrice: string | undefined;
   let collectedShippingFee: string | undefined;
   let collectedTotal: string | undefined;
+  let productPriceRecipient: string | undefined;
+  let shippingFeeRecipient: string | undefined;
   let locationUrl: string | undefined;
   try {
     collectedPrice = parseMoneyOrUndefined(body.collectedPrice);
     collectedShippingFee = parseMoneyOrUndefined(body.collectedShippingFee);
     collectedTotal = parseMoneyOrUndefined(body.collectedTotal);
+    productPriceRecipient = parseRecipientOrUndefined(body.productPriceRecipient);
+    shippingFeeRecipient = parseRecipientOrUndefined(body.shippingFeeRecipient);
     locationUrl = parseLocationUrlOrUndefined(body.locationUrl);
   } catch {
     return NextResponse.json({ error: 'بيانات الطلب غير صحيحة' }, { status: 400 });
   }
+
+  productPriceRecipient = collectedPrice === undefined
+    ? undefined
+    : productPriceRecipient ?? 'us_cash';
+  shippingFeeRecipient = collectedShippingFee === undefined
+    ? undefined
+    : shippingFeeRecipient ?? 'us_cash';
 
   try {
     const allAssignedOrders = await getDriverOrders(
@@ -235,6 +264,8 @@ export async function POST(req: NextRequest) {
         collectedPrice,
         collectedShippingFee,
         collectedTotal,
+        productPriceRecipient,
+        shippingFeeRecipient,
       },
     });
 
@@ -292,6 +323,8 @@ export async function POST(req: NextRequest) {
           typeof body.photoDataUrl === 'string' ? body.photoDataUrl : undefined,
         collectedPrice,
         collectedShippingFee,
+        productPriceRecipient,
+        shippingFeeRecipient,
         collectedValue: collectedTotal,
       });
       synced = true;

@@ -82,6 +82,15 @@ const statuses = [
   { value: 'postponed', label: 'مؤجل' },
   { value: 'cancelled', label: 'ملغي' },
   { value: 'failed', label: 'فشل التوصيل' },
+  { value: 'returned-full', label: 'مرتجع كامل' },
+  { value: 'returned-partial', label: 'مرتجع جزئي' },
+];
+
+const recipients = [
+  { value: 'us_cash', label: 'نقدي — لنا' },
+  { value: 'us_transfer', label: 'تحويل — لنا' },
+  { value: 'merchant_transfer', label: 'تحويل — للتاجر' },
+  { value: 'not_paid', label: 'لم يُدفع' },
 ];
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -110,6 +119,8 @@ export default function DriverVisitPage() {
   const [collectedPrice, setCollectedPrice] = useState('');
   const [collectedShippingFee, setCollectedShippingFee] = useState('');
   const [collectedTotal, setCollectedTotal] = useState('');
+  const [productPriceRecipient, setProductPriceRecipient] = useState('us_cash');
+  const [shippingFeeRecipient, setShippingFeeRecipient] = useState('us_cash');
   const [collectedPricingMode, setCollectedPricingMode] = useState<'sum' | 'fromTotal'>('sum');
   const [collectedFieldsForOrderId, setCollectedFieldsForOrderId] = useState<string | null>(null);
 
@@ -208,6 +219,8 @@ export default function DriverVisitPage() {
           collectedPrice: orderDetails?.dataEntry ? collectedPrice : undefined,
           collectedShippingFee: orderDetails?.dataEntry ? collectedShippingFee : undefined,
           collectedTotal: orderDetails?.dataEntry ? collectedTotal : undefined,
+          productPriceRecipient: orderDetails?.dataEntry ? productPriceRecipient : undefined,
+          shippingFeeRecipient: orderDetails?.dataEntry ? shippingFeeRecipient : undefined,
         }),
       });
       const data = await response.json();
@@ -227,6 +240,8 @@ export default function DriverVisitPage() {
       setPhotoDataUrl('');
       setSelectedStatus('');
       setLocationUrl('');
+      setProductPriceRecipient('us_cash');
+      setShippingFeeRecipient('us_cash');
     } catch {
       setError('تعذّر الاتصال بالخادم');
     } finally {
@@ -326,6 +341,16 @@ export default function DriverVisitPage() {
                           }}
                           value={collectedPrice}
                         />
+                        <select
+                          aria-label="مستلم سعر المنتج"
+                          className="mt-1 h-7 w-full rounded border border-amber-200 bg-white px-1 text-xs font-semibold text-slate-800 outline-none"
+                          onChange={(event) => setProductPriceRecipient(event.target.value)}
+                          value={productPriceRecipient}
+                        >
+                          {recipients.map((recipient) => (
+                            <option key={recipient.value} value={recipient.value}>{recipient.label}</option>
+                          ))}
+                        </select>
                       </dd>
                     </div>
                     <div
@@ -350,6 +375,16 @@ export default function DriverVisitPage() {
                           }}
                           value={collectedShippingFee}
                         />
+                        <select
+                          aria-label="مستلم الشحن"
+                          className="mt-1 h-7 w-full rounded border border-amber-200 bg-white px-1 text-xs font-semibold text-slate-800 outline-none"
+                          onChange={(event) => setShippingFeeRecipient(event.target.value)}
+                          value={shippingFeeRecipient}
+                        >
+                          {recipients.map((recipient) => (
+                            <option key={recipient.value} value={recipient.value}>{recipient.label}</option>
+                          ))}
+                        </select>
                       </dd>
                     </div>
                     <div

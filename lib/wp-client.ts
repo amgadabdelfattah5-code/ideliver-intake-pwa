@@ -101,6 +101,8 @@ export interface DeliveryVisitPayload {
   collectedValue?: string;
   collectedPrice?: string;
   collectedShippingFee?: string;
+  productPriceRecipient?: string;
+  shippingFeeRecipient?: string;
 }
 
 export async function submitDeliveryVisit(payload: DeliveryVisitPayload): Promise<void> {
@@ -124,6 +126,8 @@ export async function submitDeliveryVisit(payload: DeliveryVisitPayload): Promis
       collected_value: payload.collectedValue,
       collected_price: payload.collectedPrice,
       collected_shipping_fee: payload.collectedShippingFee,
+      product_price_recipient: payload.productPriceRecipient,
+      shipping_fee_recipient: payload.shippingFeeRecipient,
     }),
   });
 
