@@ -9,6 +9,7 @@ interface DriverOrder {
   tracking: string;
   status: string;
   merchantName: string;
+  merchantIdentityLabel?: string;
 }
 
 interface DataEntry {
@@ -414,7 +415,7 @@ export default function DriverVisitPage() {
                     >
                       <dt className="text-xs font-bold text-slate-500">التاجر</dt>
                       <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
-                        {orderDetails.order.merchantName || '—'}
+                        {orderDetails.order.merchantIdentityLabel || orderDetails.order.merchantName || '—'}
                       </dd>
                     </div>
                   </div>
@@ -431,7 +432,7 @@ export default function DriverVisitPage() {
                     >
                       <dt className="text-xs font-bold text-slate-500">التاجر</dt>
                       <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
-                        {orderDetails.order.merchantName || '—'}
+                        {orderDetails.order.merchantIdentityLabel || orderDetails.order.merchantName || '—'}
                       </dd>
                     </div>
                   </div>

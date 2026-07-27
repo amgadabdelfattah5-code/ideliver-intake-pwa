@@ -9,6 +9,7 @@ interface DriverOrder {
   status: string;
   customerName: string;
   merchantName: string;
+  merchantIdentityLabel?: string;
 }
 
 interface DataEntry {
@@ -26,6 +27,7 @@ interface GridRow {
   tracking: string;
   customerName: string;
   merchantName: string;
+  merchantIdentityLabel: string;
   recipientAddress: string;
   recipientGovernorate: string;
   recipientPhone: string;
@@ -237,6 +239,7 @@ export default function DriverBulkPage() {
               tracking: String(order.orderId),
               customerName: order.customerName,
               merchantName: order.merchantName,
+              merchantIdentityLabel: order.merchantIdentityLabel || order.merchantName,
               recipientAddress: '',
               recipientGovernorate: '',
               recipientPhone: '',
@@ -644,7 +647,9 @@ export default function DriverBulkPage() {
                   return (
                     <tr className="align-top" key={row.orderId}>
                       <td className="overflow-hidden truncate p-1 font-bold text-slate-800" title={row.tracking || undefined}>{row.tracking || '—'}</td>
-                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantName || undefined}>{row.merchantName || '—'}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantIdentityLabel || undefined}>
+                        {row.merchantIdentityLabel || '—'}
+                      </td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.customerName || undefined}>{row.customerName || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientGovernorate || undefined}>
                         {row.recipientGovernorate ||

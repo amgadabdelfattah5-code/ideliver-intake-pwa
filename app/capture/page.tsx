@@ -8,6 +8,7 @@ interface Merchant {
   wpUserId: number;
   merchantId: string;
   name: string;
+  identityLabel?: string;
   phone: string;
   governorate?: string;
   city?: string;
@@ -422,7 +423,7 @@ export default function CapturePage() {
                     type="button"
                   >
                     <span className="block text-sm font-semibold text-[#17365F]">
-                      {merchant.name}
+                      {merchant.identityLabel || merchant.name}
                     </span>
                     <span className="mt-1 block text-xs text-slate-500">
                       {merchant.phone || merchant.merchantId}
@@ -444,7 +445,9 @@ export default function CapturePage() {
           <div className="space-y-4">
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <p className="text-sm font-semibold text-slate-500">الجلسة الحالية</p>
-              <h2 className="mt-1 text-lg font-bold text-[#17365F]">{selectedMerchant.name}</h2>
+              <h2 className="mt-1 text-lg font-bold text-[#17365F]">
+                {selectedMerchant.identityLabel || selectedMerchant.name}
+              </h2>
               <p className="mt-1 text-xs text-slate-500">الجلسة {sessionId}</p>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-md bg-slate-50 p-3">

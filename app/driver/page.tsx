@@ -13,6 +13,7 @@ interface DriverOrder {
   total: string;
   merchantWpUserId?: number;
   merchantName: string;
+  merchantIdentityLabel?: string;
 }
 
 type StaffRole = 'admin' | 'pickup' | 'data_entry' | 'driver';
@@ -27,7 +28,7 @@ export default function DriverOrdersPage() {
   const merchants = useMemo(() => {
     const groups = new Map<
       number,
-      { wpUserId: number; name: string; orders: DriverOrder[] }
+      { wpUserId: number; name: string; identityLabel: string; orders: DriverOrder[] }
     >();
 
     for (const order of orders) {
@@ -39,6 +40,7 @@ export default function DriverOrdersPage() {
         groups.set(wpUserId, {
           wpUserId,
           name: wpUserId === 0 ? 'بدون تاجر' : order.merchantName || `تاجر #${wpUserId}`,
+          identityLabel: wpUserId === 0 ? '' : (order.merchantIdentityLabel || order.merchantName || `تاجر #${wpUserId}`),
           orders: [order],
         });
       }
@@ -115,7 +117,9 @@ export default function DriverOrdersPage() {
             {merchants.map((merchant) => (
               <div className="flex items-center gap-3 p-4" key={merchant.wpUserId}>
                 <div className="flex-1">
-                  <h2 className="text-base font-bold text-[#17365F]">{merchant.name}</h2>
+                  <h2 className="text-base font-bold text-[#17365F]">
+                    {merchant.identityLabel || merchant.name}
+                  </h2>
                   <p className="mt-1 text-sm font-semibold text-slate-600">
                     {merchant.orders.length} طلب
                   </p>
@@ -136,7 +140,9 @@ export default function DriverOrdersPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
               <div>
-                <h2 className="text-lg font-bold text-[#17365F]">{selectedMerchant.name}</h2>
+                <h2 className="text-lg font-bold text-[#17365F]">
+                  {selectedMerchant.identityLabel || selectedMerchant.name}
+                </h2>
                 <p className="text-sm text-slate-500">{selectedMerchant.orders.length} طلب</p>
               </div>
               <button

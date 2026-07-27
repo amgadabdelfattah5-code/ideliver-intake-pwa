@@ -6,6 +6,7 @@ interface WPMerchant {
   wpUserId: number;
   merchantId: string;
   name: string;
+  identityLabel: string;
   phone: string;
   email: string;
   governorate: string;
@@ -68,6 +69,7 @@ export interface WPDriverOrder {
   total: string;
   merchantWpUserId: number;
   merchantName: string;
+  merchantIdentityLabel: string;
   assignedDriverId: number;
 }
 
