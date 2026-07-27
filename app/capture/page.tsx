@@ -425,9 +425,11 @@ export default function CapturePage() {
                     <span className="block text-sm font-semibold text-[#17365F]">
                       {merchant.identityLabel || merchant.name}
                     </span>
-                    <span className="mt-1 block text-xs text-slate-500">
-                      {merchant.phone || merchant.merchantId}
-                    </span>
+                    {!merchant.identityLabel && (
+                      <span className="mt-1 block text-xs text-slate-500">
+                        {merchant.phone || merchant.merchantId}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
