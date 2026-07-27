@@ -138,6 +138,66 @@ const initialFilters: GridFilters = {
   note: '',
 };
 
+function exportRowsToCSV(rows: GridRow[]) {
+  const escape = (value: string | number) => {
+    const raw = String(value ?? '');
+    const safe = /^[=+\-@\t\r]/.test(raw) ? "'" + raw : raw;
+    const cleaned = safe.replace(/[\r\n]/g, ' ');
+    return /[",]/.test(cleaned) ? '"' + cleaned.replace(/"/g, '""') + '"' : cleaned;
+  };
+
+  const headers = [
+    'رقم الطلب',
+    'التاجر',
+    'اسم العميل',
+    'المحافظة',
+    'العنوان',
+    'الهاتف',
+    'سعر المنتج',
+    'مصاريف الشحن',
+    'الإجمالي',
+    'مستلم المنتج',
+    'مستلم الشحن',
+    'سعر المنتج المحصل',
+    'مصاريف الشحن المحصلة',
+    'الإجمالي المحصل',
+    'الحالة',
+    'ملاحظات',
+  ];
+  const lines = [
+    '\uFEFF' + headers.map(escape).join(','),
+    ...rows.map((row) =>
+      [
+        row.orderId,
+        row.merchantIdentityLabel || row.merchantName,
+        row.customerName,
+        row.recipientGovernorate,
+        row.recipientAddress,
+        row.recipientPhone,
+        row.printedPrice,
+        row.printedShippingFee,
+        row.printedTotal,
+        row.productPriceRecipient,
+        row.shippingFeeRecipient,
+        row.collectedPrice,
+        row.collectedShippingFee,
+        row.collectedTotal,
+        row.selectedStatus,
+        row.note,
+      ]
+        .map(escape)
+        .join(',')
+    ),
+  ];
+  const url = URL.createObjectURL(
+    new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  );
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'driver-visits-' + new Date().toISOString().slice(0, 10) + '.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function DriverBulkPage() {
   const [rows, setRows] = useState<GridRow[]>([]);
@@ -544,9 +604,21 @@ export default function DriverBulkPage() {
             <p className="text-sm font-semibold text-[#F27321]">iDeliver Egypt</p>
             <h1 className="text-xl font-bold">تحديث الزيارات كجدول</h1>
           </div>
-          <Link className="idv-button idv-button-light idv-button-small text-sm" href="/driver">
-            رجوع
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              className="idv-button idv-button-light idv-button-small text-sm"
+              disabled={
+                loading || dataEntriesLoadState === 'loading' || rows.length === 0
+              }
+              onClick={() => exportRowsToCSV(rows)}
+              type="button"
+            >
+              تنزيل CSV
+            </button>
+            <Link className="idv-button idv-button-light idv-button-small text-sm" href="/driver">
+              رجوع
+            </Link>
+          </div>
         </div>
       </header>
 
