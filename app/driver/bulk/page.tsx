@@ -113,8 +113,7 @@ const statuses = [
 ];
 
 const recipients = [
-  { value: 'us_cash', label: 'نقدي — لنا' },
-  { value: 'us_transfer', label: 'تحويل — لنا' },
+  { value: 'us_cash', label: 'محصّل — لنا' },
   { value: 'merchant_transfer', label: 'تحويل — للتاجر' },
   { value: 'not_paid', label: 'لم يُدفع' },
 ];
@@ -580,6 +579,7 @@ export default function DriverBulkPage() {
   }
 
   function recipientLabel(value: string): string {
+    if (value === 'us_transfer') return 'محصّل — لنا';
     return recipients.find((recipient) => recipient.value === value)?.label ?? value;
   }
 
