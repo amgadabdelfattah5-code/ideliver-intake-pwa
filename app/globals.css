@@ -218,6 +218,12 @@ input:-webkit-autofill:focus {
   width: 80mm;
 }
 
+.idv-barcode svg {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
 /* ============ Print ============ */
 @media print {
   /* ponytail: visibility (not display) keeps layout stable while masking non-sticker UI. */

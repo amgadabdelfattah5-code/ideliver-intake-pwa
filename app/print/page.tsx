@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { barcodeValueForOrder, encodeCode39 } from '@/lib/barcode';
+import QRCode from 'qrcode';
 
 type Fields = Record<string, unknown>;
 
@@ -46,52 +46,32 @@ const STICKER_FIELDS = {
   notes: (o: PrintOrder) => f(o.correctedFields, 'notes'),
 };
 
-function Barcode({ value }: { value: string }) {
-  const rects = useMemo(() => {
-    const bars = encodeCode39(value);
-    const totalUnits = bars.reduce((s, b) => s + b.width, 0);
-    const unit = 100 / totalUnits;
-    let cursor = 0;
-    const out: Array<{ x: number; w: number; key: number }> = [];
+function QRSticker({ orderNumber }: { orderNumber: string }) {
+  const [svg, setSvg] = useState<string | null>(null);
 
-    for (let i = 0; i < bars.length; i++) {
-      const bar = bars[i];
-      const w = bar.width * unit;
-      if (bar.fill) out.push({ x: cursor, w, key: i });
-      cursor += w;
-    }
-    return out;
-  }, [value]);
+  useEffect(() => {
+    if (!orderNumber) return;
+    const url = `${window.location.origin}/driver/${encodeURIComponent(orderNumber)}`;
+    QRCode.toString(url, { type: 'svg', margin: 1, width: 160 })
+      .then(setSvg)
+      .catch(() => setSvg(''));
+  }, [orderNumber]);
+
+  const renderedSvg = orderNumber ? svg : '';
 
   return (
-    <svg
+    <div
       className="idv-barcode"
-      viewBox={`0 0 100 40`}
-      preserveAspectRatio="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label={`باركود ${value}`}
       role="img"
-    >
-      {rects.map((r) => (
-        <rect fill="#000" height="32" key={r.key} width={r.w} x={r.x} y="0" />
-      ))}
-      <text
-        x="50"
-        y="39"
-        fontSize="5"
-        textAnchor="middle"
-        fontFamily="monospace"
-        fill="#000"
-      >
-        {value}
-      </text>
-    </svg>
+      aria-label={`QR code for order ${orderNumber}`}
+      {...(renderedSvg === null ? { 'data-loading': '' } : {})}
+      dangerouslySetInnerHTML={renderedSvg ? { __html: renderedSvg } : undefined}
+    />
   );
 }
 
 function Sticker({ order }: { order: PrintOrder }) {
   const orderNumber = STICKER_FIELDS.orderNumber(order);
-  const barcodeValue = barcodeValueForOrder(orderNumber);
 
   return (
     <div className="idv-sticker" data-sticker>
@@ -161,7 +141,7 @@ function Sticker({ order }: { order: PrintOrder }) {
       )}
 
       <div className="idv-sticker-barcode">
-        <Barcode value={barcodeValue} />
+        <QRSticker orderNumber={orderNumber} />
       </div>
     </div>
   );
@@ -182,7 +162,19 @@ async function waitForPrintImages() {
   );
 }
 
+async function waitForQRCodes() {
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  await new Promise<void>((resolve) => {
+    const poll = () => {
+      if (!document.querySelector('[data-loading]')) resolve();
+      else setTimeout(poll, 50);
+    };
+    poll();
+  });
+}
+
 export default function PrintPage() {
+  const isPrinting = useRef<boolean>(false);
   const [merchants, setMerchants] = useState<PrintQueueMerchant[]>([]);
   const [orders, setOrders] = useState<PrintOrder[]>([]);
   const [activeMerchant, setActiveMerchant] = useState<PrintQueueMerchant | null>(null);
@@ -220,11 +212,16 @@ export default function PrintPage() {
   }, [loadMerchants]);
 
   const triggerPrint = (toPrint: PrintOrder[]) => {
+    if (isPrinting.current === true) return;
     if (toPrint.length === 0) return;
     setPrintQueue(toPrint);
     // ponytail: print-root is mounted just-in-time; wait for the logo image so
     // the browser doesn't snapshot the sticker before it decodes.
-    void waitForPrintImages().then(() => window.print());
+    isPrinting.current = true;
+    void Promise.all([waitForPrintImages(), waitForQRCodes()]).then(() => {
+      window.print();
+      isPrinting.current = false;
+    });
   };
 
   const removeFromQueue = async (orderIds: string[]) => {
