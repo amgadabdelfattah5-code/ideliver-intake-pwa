@@ -23,8 +23,8 @@ const localAccounts: LocalPwaAccount[] = [
     email: 'hamoo@ideliver.local',
     role: 'admin',
     wpUserId: -101,
-    salt: 'a7769eff749be57495c380e12d9045d2',
-    passwordHash: 'ff2552f7728516efc9f1fe319f9e0f901c05af72b19fd2fe9750df5080d996de',
+    salt: 'd3c60755ff10e2de846aefddb0fc2f72',
+    passwordHash: 'e698ffd44c088977f3f035c09602348ecf1cdd63e7bab98e844547aae367e9c0',
   },
   {
     username: 'karma',
