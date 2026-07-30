@@ -137,3 +137,72 @@ export async function submitDeliveryVisit(payload: DeliveryVisitPayload): Promis
     throw new Error(`WP API error: ${res.status}`);
   }
 }
+
+export async function getSettlementView(merchantId: number) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/settlement/view?merchant_id=${merchantId}`, {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json();
+}
+
+export async function getSettlementAdjustments(merchantId: number, claimed: boolean) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/settlement/adjustments?merchant_id=${merchantId}&claimed=${claimed ? 1 : 0}`, {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json();
+}
+
+export async function postSettlementAdjustment(body: object) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/settlement/adjustment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json();
+}
+
+export async function postSettlementPayout(body: object) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/settlement/payout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json();
+}
+
+export async function postSettlementOrderEdit(body: object) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/settlement/order-edit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json();
+}
+
+export async function getSettlementPayouts(merchantId: number) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/settlement/payouts?merchant_id=${merchantId}`, {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchSettlementExport(merchantId: number, type: 'main' | 'review') {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/settlement/export?merchant_id=${merchantId}&type=${type}`, {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res;
+}

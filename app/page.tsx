@@ -284,6 +284,22 @@ export default function Home() {
           </div>
         )}
 
+        {user.role === 'admin' && (
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">التسوية المالية</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">تسوية حساب التاجر</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              راجع الطلبات المؤهلة، أضف تعديلات، وأعدّ دفعات التحويل للتجار.
+            </p>
+            <a
+              className="idv-button idv-button-orange mt-5 h-10 text-sm flex items-center justify-center"
+              href="/settlement"
+            >
+              فتح التسوية
+            </a>
+          </div>
+        )}
+
         {(user.role === 'admin' || user.role === 'data_entry' || user.role === 'driver') && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">تدفّق التوصيل</p>
