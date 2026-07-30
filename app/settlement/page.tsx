@@ -139,7 +139,7 @@ export default function SettlementPage() {
       const res = await fetch('/api/settlement/adjustment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ op: 'add', merchant_id: merchantId, kind: adjKind, amount, reason }),
+        body: JSON.stringify({ op: 'add', merchant_id: merchantId, kind: adjKind, amount, reason, submit_key: crypto.randomUUID() }),
       });
       if (!res.ok) throw new Error(await res.text());
       setAdjAmount(''); setAdjReason(''); setOnAcctAmount('');
