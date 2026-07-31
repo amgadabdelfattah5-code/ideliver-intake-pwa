@@ -46,9 +46,9 @@ const fieldSizing: Record<string, { minWidth: string; grow: number }> = {
   recipientGovernorate: { minWidth: '90px', grow: 1 },
   recipientAddress: { minWidth: '180px', grow: 3 },
   product: { minWidth: '140px', grow: 1 },
-  price: { minWidth: '55px', grow: 1 },
-  shippingFeePrinted: { minWidth: '55px', grow: 1 },
-  total: { minWidth: '55px', grow: 1 },
+  price: { minWidth: '110px', grow: 1 },
+  shippingFeePrinted: { minWidth: '110px', grow: 1 },
+  total: { minWidth: '110px', grow: 1 },
   merchantName: { minWidth: '120px', grow: 1 },
 };
 
