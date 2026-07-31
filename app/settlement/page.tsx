@@ -37,6 +37,7 @@ export default function SettlementPage() {
   const [merchantSearch, setMerchantSearch] = useState('');
   const [merchantDropdownOpen, setMerchantDropdownOpen] = useState(false);
   const merchantInputRef = useRef<HTMLInputElement>(null);
+  const merchantContainerRef = useRef<HTMLDivElement>(null);
   const [eligible, setEligible] = useState<EligibleOrder[]>([]);
   const [attention, setAttention] = useState<Attention[]>([]);
   const [totals, setTotals] = useState<{ count: number; lines_net: number } | null>(null);
@@ -67,6 +68,16 @@ export default function SettlementPage() {
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => setUser(d?.user ?? null));
     fetch('/api/merchants').then(r => r.ok ? r.json() : null).then(d => setMerchants(d?.merchants ?? []));
+  }, []);
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (merchantContainerRef.current && !merchantContainerRef.current.contains(e.target as Node)) {
+        setMerchantDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
 
   async function loadData(mid: number) {
@@ -227,7 +238,7 @@ export default function SettlementPage() {
         {/* Merchant picker */}
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <label className="block text-sm font-semibold text-[#17365F] mb-1">التاجر</label>
-          <div className="relative">
+          <div className="relative" ref={merchantContainerRef}>
             <input
               ref={merchantInputRef}
               type="text"
@@ -242,10 +253,9 @@ export default function SettlementPage() {
                 setMerchantSearch(e.target.value);
                 setMerchantDropdownOpen(true);
               }}
-              onBlur={() => setTimeout(() => setMerchantDropdownOpen(false), 150)}
             />
             {merchantDropdownOpen && (
-              <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
+              <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
                 {filteredMerchants.length > 0 ? filteredMerchants.map(m => {
                   const displayName = `${m.name} (${m.merchantId})`;
                   return (
