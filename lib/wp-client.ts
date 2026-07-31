@@ -142,6 +142,7 @@ export async function getSettlementView(merchantId: number) {
   const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
   const res = await fetch(`${getLiquidShipBase()}/settlement/view?merchant_id=${merchantId}`, {
     headers: { Authorization: `Basic ${auth}` },
+    cache: 'no-store',
   });
   if (!res.ok) throw new Error(`WP API error: ${res.status}`);
   return res.json();
@@ -151,6 +152,7 @@ export async function getSettlementAdjustments(merchantId: number, claimed: bool
   const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
   const res = await fetch(`${getLiquidShipBase()}/settlement/adjustments?merchant_id=${merchantId}&claimed=${claimed ? 1 : 0}`, {
     headers: { Authorization: `Basic ${auth}` },
+    cache: 'no-store',
   });
   if (!res.ok) throw new Error(`WP API error: ${res.status}`);
   return res.json();
@@ -193,6 +195,7 @@ export async function getSettlementPayouts(merchantId: number) {
   const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
   const res = await fetch(`${getLiquidShipBase()}/settlement/payouts?merchant_id=${merchantId}`, {
     headers: { Authorization: `Basic ${auth}` },
+    cache: 'no-store',
   });
   if (!res.ok) throw new Error(`WP API error: ${res.status}`);
   return res.json();
