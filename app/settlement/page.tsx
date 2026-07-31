@@ -17,13 +17,13 @@ interface Balance { carry_balance: number; cutover_complete: boolean; open_payou
 interface Payout { id: number; status: string; net_transferred: number; external_ref: string | null; created_at: string; committed_at: string | null; }
 
 const RECIP_LABELS: Record<string, string> = {
-  us_cash: 'ÙØ­ØµÙ - ÙÙØ§', us_transfer: 'ÙØ­ØµÙ - ÙÙØ§',
-  merchant_transfer: 'ØªØ­ÙÙÙ - ÙÙØªØ§Ø¬Ø±', not_paid: 'ÙÙ ÙÙØ­ØµÙÙÙ',
+  us_cash: 'محصل - لنا', us_transfer: 'محصل - لنا',
+  merchant_transfer: 'تحويل - للتاجر', not_paid: 'لم يحصلون',
 };
 const RECIP_OPTIONS = [
-  { value: 'us_cash', label: 'ÙØ­ØµÙ - ÙÙØ§' },
-  { value: 'merchant_transfer', label: 'ØªØ­ÙÙÙ - ÙÙØªØ§Ø¬Ø±' },
-  { value: 'not_paid', label: 'ÙÙ ÙÙØ­ØµÙÙÙ' },
+  { value: 'us_cash', label: 'محصل - لنا' },
+  { value: 'merchant_transfer', label: 'تحويل - للتاجر' },
+  { value: 'not_paid', label: 'لم يحصلون' },
 ];
 
 function egp(piastres: number) {
@@ -47,23 +47,19 @@ export default function SettlementPage() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
-  // Row edit state
   const [rowEdits, setRowEdits] = useState<Record<number, { product_amount: string; shipping_amount: string; product_recipient: string; shipping_recipient: string }>>({});
   const [rowSaving, setRowSaving] = useState<Record<number, boolean>>({});
 
-  // Adjustment form state
   const [adjAmount, setAdjAmount] = useState('');
   const [adjReason, setAdjReason] = useState('');
   const [adjKind] = useState('standalone');
   const [onAcctAmount, setOnAcctAmount] = useState('');
   const [adjSubmitting, setAdjSubmitting] = useState(false);
 
-  // Payout state
   const [payoutRef, setPayoutRef] = useState('');
   const [zeroReason, setZeroReason] = useState('');
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
 
-  // Adjustment inline edit
   const [editingAdj, setEditingAdj] = useState<number | null>(null);
   const [editAdjAmount, setEditAdjAmount] = useState('');
   const [editAdjReason, setEditAdjReason] = useState('');
@@ -91,7 +87,6 @@ export default function SettlementPage() {
       setUnclaimedAdj(unclRes ?? []);
       setClaimedAdj(clRes ?? []);
       setPayouts(payRes ?? []);
-      // init row edits
       const edits: typeof rowEdits = {};
       for (const o of (viewRes.eligible ?? [])) {
         const pr = o.product_price_recipient === 'us_transfer' ? 'us_cash' : (o.product_price_recipient || 'us_cash');
@@ -127,10 +122,10 @@ export default function SettlementPage() {
         body: JSON.stringify({ order_id: orderId, merchant_id: merchantId, ...edit }),
       });
       if (!res.ok) throw new Error(await res.text());
-      setMsg('ØªÙ Ø­ÙØ¸ Ø§ÙØ·ÙØ¨ #' + orderId);
+      setMsg('تم حفظ الطلب #' + orderId);
       await loadData(merchantId);
     } catch (e: any) {
-      setMsg('Ø®Ø·Ø£: ' + e.message);
+      setMsg('خطأ: ' + e.message);
     } finally {
       setRowSaving(s => ({ ...s, [orderId]: false }));
     }
@@ -146,17 +141,17 @@ export default function SettlementPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       setAdjAmount(''); setAdjReason(''); setOnAcctAmount('');
-      setMsg('ØªÙ Ø¥Ø¶Ø§ÙØ© Ø§ÙØªØ¹Ø¯ÙÙ');
+      setMsg('تم إضافة التعديل');
       await loadData(merchantId);
     } catch (e: any) {
-      setMsg('Ø®Ø·Ø£: ' + e.message);
+      setMsg('خطأ: ' + e.message);
     } finally {
       setAdjSubmitting(false);
     }
   }
 
   async function deleteAdj(adjId: number) {
-    if (!confirm('Ø­Ø°Ù ÙØ°Ø§ Ø§ÙØªØ¹Ø¯ÙÙØ')) return;
+    if (!confirm('حذف هذا التعديل؟')) return;
     try {
       const res = await fetch('/api/settlement/adjustment', {
         method: 'POST',
@@ -164,10 +159,10 @@ export default function SettlementPage() {
         body: JSON.stringify({ op: 'delete', merchant_id: merchantId, adjustment_id: adjId }),
       });
       if (!res.ok) throw new Error(await res.text());
-      setMsg('ØªÙ Ø§ÙØ­Ø°Ù');
+      setMsg('تم الحذف');
       await loadData(merchantId);
     } catch (e: any) {
-      setMsg('Ø®Ø·Ø£: ' + e.message);
+      setMsg('خطأ: ' + e.message);
     }
   }
 
@@ -180,10 +175,10 @@ export default function SettlementPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       setEditingAdj(null);
-      setMsg('ØªÙ Ø§ÙØªØ¹Ø¯ÙÙ');
+      setMsg('تم التعديل');
       await loadData(merchantId);
     } catch (e: any) {
-      setMsg('Ø®Ø·Ø£: ' + e.message);
+      setMsg('خطأ: ' + e.message);
     }
   }
 
@@ -197,17 +192,17 @@ export default function SettlementPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       setPayoutRef(''); setZeroReason('');
-      setMsg('ØªÙ: ' + op);
+      setMsg('تم: ' + op);
       await loadData(merchantId);
     } catch (e: any) {
-      setMsg('Ø®Ø·Ø£: ' + e.message);
+      setMsg('خطأ: ' + e.message);
     } finally {
       setPayoutSubmitting(false);
     }
   }
 
-  if (!user) return <div className="p-8 text-center text-[#17365F]">Ø¬Ø§Ø±Ù Ø§ÙØªØ­ÙÙÙ...</div>;
-  if (user.role !== 'admin') return <div className="p-8 text-center text-red-600">ØºÙØ± ÙØµØ±Ø­</div>;
+  if (!user) return <div className="p-8 text-center text-[#17365F]">جاري التحميل...</div>;
+  if (user.role !== 'admin') return <div className="p-8 text-center text-red-600">غير مصرح</div>;
 
   const netEgp = totals && balance ? ((totals.lines_net + balance.carry_balance) / 100).toFixed(2) : null;
   const openStatus = balance?.open_payout_status ?? null;
@@ -222,16 +217,16 @@ export default function SettlementPage() {
     <main className="min-h-screen bg-[#f6f8fb]" dir="rtl">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold text-[#17365F]">Ø§ÙØªØ³ÙÙØ©</h1>
-          <a href="/" className="text-sm text-slate-500 hover:text-[#17365F]">â Ø§ÙØ±Ø¦ÙØ³ÙØ©</a>
+          <h1 className="text-xl font-bold text-[#17365F]">التسوية</h1>
+          <a href="/" className="text-sm text-slate-500 hover:text-[#17365F]">← الرئيسية</a>
         </div>
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
 
-        {/* ââ Merchant picker ââ */}
+        {/* Merchant picker */}
         <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <label className="block text-sm font-semibold text-[#17365F] mb-1">Ø§ÙØªØ§Ø¬Ø±</label>
+          <label className="block text-sm font-semibold text-[#17365F] mb-1">التاجر</label>
           <div className="relative">
             <input
               ref={merchantInputRef}
@@ -279,46 +274,46 @@ export default function SettlementPage() {
           <div className="rounded border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-800">{msg}</div>
         )}
 
-        {loading && <div className="text-center text-sm text-slate-500 py-4">Ø¬Ø§Ø±Ù Ø§ÙØªØ­ÙÙÙ...</div>}
+        {loading && <div className="text-center text-sm text-slate-500 py-4">جاري التحميل...</div>}
 
         {merchantId > 0 && !loading && balance && (
           <>
-            {/* ââ Balance summary ââ */}
+            {/* Balance summary */}
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <h2 className="text-base font-bold text-[#17365F] mb-3">ÙÙØ®Øµ Ø§ÙØ±ØµÙØ¯</h2>
+              <h2 className="text-base font-bold text-[#17365F] mb-3">ملخص الرصيد</h2>
               <table className="w-full text-sm">
                 <tbody>
                   <tr className="border-b border-slate-100">
-                    <th className="py-1 text-right font-medium text-slate-600 w-48">Ø§ÙØ±ØµÙØ¯ Ø§ÙÙÙØ±Ø­ÙÙÙ</th>
-                    <td className="py-1">{egp(balance.carry_balance)} Ø¬.Ù</td>
+                    <th className="py-1 text-right font-medium text-slate-600 w-48">الرصيد المرحول</th>
+                    <td className="py-1">{egp(balance.carry_balance)} ج.م</td>
                   </tr>
                   <tr className="border-b border-slate-100">
-                    <th className="py-1 text-right font-medium text-slate-600">Ø§ÙØªÙÙ Ø§ÙØªØ­ÙÙÙ</th>
-                    <td className="py-1">{balance.cutover_complete ? 'â' : 'â ÙØ¬Ø¨ ØªØ´ØºÙÙ Ø§ÙØªØ¹Ø¨Ø¦Ø© Ø§ÙØ£ÙÙÙØ©'}</td>
+                    <th className="py-1 text-right font-medium text-slate-600">اكتمال التحويل</th>
+                    <td className="py-1">{balance.cutover_complete ? '✓' : '✗ يجب تشغيل التعبئة الأولية'}</td>
                   </tr>
                   <tr>
-                    <th className="py-1 text-right font-medium text-slate-600">Ø¯ÙØ¹Ø© ÙÙØªÙØ­Ø©</th>
+                    <th className="py-1 text-right font-medium text-slate-600">دفعة مفتوحة</th>
                     <td className="py-1">
                       {balance.open_payout_id
                         ? `#${balance.open_payout_id} (${balance.open_payout_status})`
-                        : 'ÙØ§ ÙÙØ¬Ø¯'}
+                        : 'لا يوجد'}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* ââ Eligible orders ââ */}
+            {/* Eligible orders */}
             <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <h2 className="text-base font-bold text-[#17365F] mb-3">Ø§ÙØ·ÙØ¨Ø§Øª Ø§ÙÙØ¤ÙÙØ© ({totals?.count ?? 0})</h2>
+              <h2 className="text-base font-bold text-[#17365F] mb-3">الطلبات المؤهلة ({totals?.count ?? 0})</h2>
               {eligible.length === 0 ? (
-                <p className="text-sm text-slate-500">ÙØ§ ØªÙØ¬Ø¯ Ø·ÙØ¨Ø§Øª ÙØ¤ÙÙØ©.</p>
+                <p className="text-sm text-slate-500">لا توجد طلبات مؤهلة.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50">
                       <tr>
-                        {['Ø§ÙØ·ÙØ¨','Ø§ÙØ§Ø³Ù','Ø§ÙÙØ§ØªÙ','Ø§ÙÙØ­Ø§ÙØ¸Ø©','Ø§ÙØ­Ø§ÙØ©','Ø§ÙÙÙØªØ¬ (Ø¬.Ù)','Ø§ÙØ´Ø­Ù (Ø¬.Ù)','Ø­ÙØ¸'].map(h => (
+                        {['الطلب','الاسم','الهاتف','المحافظة','الحالة','المنتج (ج.م)','الشحن (ج.م)','حفظ'].map(h => (
                           <th key={h} className="px-2 py-2 text-right font-semibold text-slate-600">{h}</th>
                         ))}
                       </tr>
@@ -383,7 +378,7 @@ export default function SettlementPage() {
                                 disabled={rowSaving[o.order_id]}
                                 onClick={() => saveRow(o.order_id)}
                               >
-                                {rowSaving[o.order_id] ? '...' : 'Ø­ÙØ¸'}
+                                {rowSaving[o.order_id] ? '...' : 'حفظ'}
                               </button>
                             </td>
                           </tr>
@@ -395,34 +390,33 @@ export default function SettlementPage() {
               )}
             </div>
 
-            {/* ââ Attention ââ */}
+            {/* Attention */}
             {attention.length > 0 && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <h2 className="text-base font-bold text-amber-800 mb-2">ØªØ­ØªØ§Ø¬ ÙØ±Ø§Ø¬Ø¹Ø© ({attention.length})</h2>
+                <h2 className="text-base font-bold text-amber-800 mb-2">تحتاج مراجعة ({attention.length})</h2>
                 <ul className="space-y-1">
                   {attention.map(a => (
-                    <li key={a.order_id} className="text-sm text-amber-700">#{a.order_id} â {a.reason}</li>
+                    <li key={a.order_id} className="text-sm text-amber-700">#{a.order_id} — {a.reason}</li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {/* ââ Adjustments ââ */}
+            {/* Adjustments */}
             <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-4">
-              <h2 className="text-base font-bold text-[#17365F]">Ø§ÙØªØ¹Ø¯ÙÙØ§Øª</h2>
+              <h2 className="text-base font-bold text-[#17365F]">التعديلات</h2>
 
-              {/* Add standalone adjustment */}
               <div className="rounded border border-slate-200 p-3 space-y-2">
-                <p className="text-sm font-semibold text-slate-600">Ø¥Ø¶Ø§ÙØ© ØªØ¹Ø¯ÙÙ</p>
+                <p className="text-sm font-semibold text-slate-600">إضافة تعديل</p>
                 <div className="flex gap-2 flex-wrap">
                   <input
-                    type="number" step="0.01" placeholder="Ø§ÙÙØ¨ÙØº (Ø¬.ÙØ Ø³Ø§ÙØ¨ ÙÙØ®ØµÙ)"
+                    type="number" step="0.01" placeholder="المبلغ (ج.م، سالب للخصم)"
                     className="rounded border border-slate-300 px-2 py-1 text-sm w-40"
                     value={adjAmount}
                     onChange={e => setAdjAmount(e.target.value)}
                   />
                   <input
-                    type="text" placeholder="Ø§ÙØ³Ø¨Ø¨"
+                    type="text" placeholder="السبب"
                     className="rounded border border-slate-300 px-2 py-1 text-sm flex-1 min-w-32"
                     value={adjReason}
                     onChange={e => setAdjReason(e.target.value)}
@@ -432,17 +426,16 @@ export default function SettlementPage() {
                     disabled={adjSubmitting || !adjAmount || !adjReason}
                     onClick={() => addAdj(adjReason, adjAmount)}
                   >
-                    Ø¥Ø¶Ø§ÙØ©
+                    إضافة
                   </button>
                 </div>
               </div>
 
-              {/* Add ØªØ­Øª Ø§ÙØ­Ø³Ø§Ø¨ */}
               <div className="rounded border border-slate-200 p-3 space-y-2">
-                <p className="text-sm font-semibold text-slate-600">ØªØ­Øª Ø§ÙØ­Ø³Ø§Ø¨ (Ø®ØµÙ)</p>
+                <p className="text-sm font-semibold text-slate-600">تحت الحساب (خصم)</p>
                 <div className="flex gap-2">
                   <input
-                    type="number" step="0.01" min="0" placeholder="Ø§ÙÙØ¨ÙØº (Ø¬.Ù)"
+                    type="number" step="0.01" min="0" placeholder="المبلغ (ج.م)"
                     className="rounded border border-slate-300 px-2 py-1 text-sm w-40"
                     value={onAcctAmount}
                     onChange={e => setOnAcctAmount(e.target.value)}
@@ -450,21 +443,20 @@ export default function SettlementPage() {
                   <button
                     className="rounded bg-amber-600 px-3 py-1 text-sm text-white hover:bg-amber-700 disabled:opacity-50"
                     disabled={adjSubmitting || !onAcctAmount}
-                    onClick={() => addAdj('ØªØ­Øª Ø§ÙØ­Ø³Ø§Ø¨', onAcctAmount)}
+                    onClick={() => addAdj('تحت الحساب', onAcctAmount)}
                   >
-                    Ø¥Ø¶Ø§ÙØ© ØªØ­Øª Ø§ÙØ­Ø³Ø§Ø¨
+                    إضافة تحت الحساب
                   </button>
                 </div>
               </div>
 
-              {/* Unclaimed adjustments */}
               {unclaimedAdj.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-slate-600 mb-1">Ø§ÙØªØ¹Ø¯ÙÙØ§Øª ØºÙØ± Ø§ÙÙÙØ·Ø§ÙÙØ¨ Ø¨ÙØ§</p>
+                  <p className="text-sm font-semibold text-slate-600 mb-1">التعديلات غير المطالب بها</p>
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50">
                       <tr>
-                        {['#','Ø§ÙÙÙØ¹','Ø§ÙÙØ¨ÙØº','Ø§ÙØ³Ø¨Ø¨','ØªØ§Ø±ÙØ®','Ø¥Ø¬Ø±Ø§Ø¡'].map(h => (
+                        {['#','النوع','المبلغ','السبب','تاريخ','إجراء'].map(h => (
                           <th key={h} className="px-2 py-1 text-right font-semibold text-slate-600">{h}</th>
                         ))}
                       </tr>
@@ -485,13 +477,13 @@ export default function SettlementPage() {
                             {editingAdj === a.id ? (
                               <>
                                 <input type="number" step="0.01" className="rounded border border-slate-300 px-1 py-0.5 w-20" value={editAdjAmount} onChange={e => setEditAdjAmount(e.target.value)} />
-                                <button className="rounded bg-green-600 px-2 py-0.5 text-white text-xs" onClick={() => saveAdjEdit(a.id)}>Ø­ÙØ¸</button>
-                                <button className="rounded bg-slate-400 px-2 py-0.5 text-white text-xs" onClick={() => setEditingAdj(null)}>Ø¥ÙØºØ§Ø¡</button>
+                                <button className="rounded bg-green-600 px-2 py-0.5 text-white text-xs" onClick={() => saveAdjEdit(a.id)}>حفظ</button>
+                                <button className="rounded bg-slate-400 px-2 py-0.5 text-white text-xs" onClick={() => setEditingAdj(null)}>إلغاء</button>
                               </>
                             ) : (
                               <>
-                                <button className="rounded bg-blue-600 px-2 py-0.5 text-white text-xs" onClick={() => { setEditingAdj(a.id); setEditAdjAmount(egp(a.amount)); setEditAdjReason(a.reason); }}>ØªØ¹Ø¯ÙÙ</button>
-                                <button className="rounded bg-red-600 px-2 py-0.5 text-white text-xs" onClick={() => deleteAdj(a.id)}>Ø­Ø°Ù</button>
+                                <button className="rounded bg-blue-600 px-2 py-0.5 text-white text-xs" onClick={() => { setEditingAdj(a.id); setEditAdjAmount(egp(a.amount)); setEditAdjReason(a.reason); }}>تعديل</button>
+                                <button className="rounded bg-red-600 px-2 py-0.5 text-white text-xs" onClick={() => deleteAdj(a.id)}>حذف</button>
                               </>
                             )}
                           </td>
@@ -502,13 +494,12 @@ export default function SettlementPage() {
                 </div>
               )}
 
-              {/* Claimed adjustments */}
               {claimedAdj.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-slate-600 mb-1">Ø§ÙØªØ¹Ø¯ÙÙØ§Øª Ø§ÙÙÙØ·Ø§ÙÙØ¨ Ø¨ÙØ§ (ÙÙÙÙØ©)</p>
+                  <p className="text-sm font-semibold text-slate-600 mb-1">التعديلات المطالب بها (مقفلة)</p>
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50">
-                      <tr>{['#','Ø§ÙÙÙØ¹','Ø§ÙÙØ¨ÙØº','Ø§ÙØ³Ø¨Ø¨','Ø¯ÙØ¹Ø©','ØªØ§Ø±ÙØ®'].map(h => <th key={h} className="px-2 py-1 text-right font-semibold text-slate-600">{h}</th>)}</tr>
+                      <tr>{['#','النوع','المبلغ','السبب','دفعة','تاريخ'].map(h => <th key={h} className="px-2 py-1 text-right font-semibold text-slate-600">{h}</th>)}</tr>
                     </thead>
                     <tbody>
                       {claimedAdj.map(a => (
@@ -527,47 +518,47 @@ export default function SettlementPage() {
               )}
             </div>
 
-            {/* ââ Excel buttons ââ */}
+            {/* Excel buttons */}
             <div className="rounded-lg border border-slate-200 bg-white p-4 flex gap-3 flex-wrap">
               <button
                 className="rounded bg-green-700 px-4 py-2 text-sm text-white hover:bg-green-800"
                 onClick={() => { window.location.href = `/api/settlement/export?merchant_id=${merchantId}&type=main`; }}
               >
-                ØªØ­ÙÙÙ Excel (Ø±Ø¦ÙØ³Ù)
+                تحميل Excel (رئيسي)
               </button>
               <button
                 className="rounded bg-teal-700 px-4 py-2 text-sm text-white hover:bg-teal-800"
                 onClick={() => { window.location.href = `/api/settlement/export?merchant_id=${merchantId}&type=review`; }}
               >
-                ØªØ­ÙÙÙ Excel (ÙØ±Ø§Ø¬Ø¹Ø©)
+                تحميل Excel (مراجعة)
               </button>
             </div>
 
-            {/* ââ Net preview ââ */}
+            {/* Net preview */}
             {totals && balance && (
               <div className="rounded-lg border border-slate-200 bg-white p-4">
                 <table className="w-full text-sm">
                   <tbody>
                     <tr className="border-b border-slate-100">
-                      <th className="py-1 text-right font-medium text-slate-600 w-48">ØµØ§ÙÙ Ø§ÙØ·ÙØ¨Ø§Øª</th>
-                      <td className="py-1">{egp(totals.lines_net)} Ø¬.Ù</td>
+                      <th className="py-1 text-right font-medium text-slate-600 w-48">صافي الطلبات</th>
+                      <td className="py-1">{egp(totals.lines_net)} ج.م</td>
                     </tr>
                     <tr className="border-b border-slate-100">
-                      <th className="py-1 text-right font-medium text-slate-600">Ø§ÙÙÙØ±Ø­ÙÙÙ</th>
-                      <td className="py-1">{egp(balance.carry_balance)} Ø¬.Ù</td>
+                      <th className="py-1 text-right font-medium text-slate-600">المرحول</th>
+                      <td className="py-1">{egp(balance.carry_balance)} ج.م</td>
                     </tr>
                     <tr>
-                      <th className="py-1 text-right font-bold text-[#17365F]">= Ø§ÙÙØ³ØªØ­Ù ÙÙØªØ­ÙÙÙ</th>
-                      <td className="py-1 font-bold text-[#17365F]">{netEgp} Ø¬.Ù</td>
+                      <th className="py-1 text-right font-bold text-[#17365F]">= المستحق للتحويل</th>
+                      <td className="py-1 font-bold text-[#17365F]">{netEgp} ج.م</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             )}
 
-            {/* ââ Ø¥Ø¹Ø¯Ø§Ø¯ Ø§ÙØ¯ÙØ¹Ø© ââ */}
+            {/* Payout actions */}
             <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
-              <h2 className="text-base font-bold text-[#17365F]">Ø¥Ø¹Ø¯Ø§Ø¯ Ø§ÙØ¯ÙØ¹Ø©</h2>
+              <h2 className="text-base font-bold text-[#17365F]">إعداد الدفعة</h2>
               <div className="flex gap-2 flex-wrap">
                 {!openStatus && (
                   <button
@@ -575,44 +566,44 @@ export default function SettlementPage() {
                     disabled={payoutSubmitting}
                     onClick={() => doPayout('prepare')}
                   >
-                    Ø¥Ø¹Ø¯Ø§Ø¯ Ø¯ÙØ¹Ø©
+                    إعداد دفعة
                   </button>
                 )}
                 {openStatus === 'draft' && (
                   <>
-                    <button className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting} onClick={() => doPayout('begin')}>Ø¨Ø¯Ø¡ Ø§ÙØªØ­ÙÙÙ</button>
-                    <button className="rounded bg-slate-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>Ø¥ÙØºØ§Ø¡</button>
-                    <button className="rounded bg-amber-600 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting || !zeroReason} onClick={() => doPayout('commit_zero', { reason: zeroReason })}>Ø¥ØºÙØ§Ù Ø¨ØµÙØ±</button>
-                    <input type="text" placeholder="Ø³Ø¨Ø¨ Ø§ÙØ¥ØºÙØ§Ù Ø¨ØµÙØ±" className="rounded border border-slate-300 px-2 py-1 text-sm flex-1 min-w-32" value={zeroReason} onChange={e => setZeroReason(e.target.value)} />
+                    <button className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting} onClick={() => doPayout('begin')}>بدء التحويل</button>
+                    <button className="rounded bg-slate-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>إلغاء</button>
+                    <button className="rounded bg-amber-600 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting || !zeroReason} onClick={() => doPayout('commit_zero', { reason: zeroReason })}>إغلاق بصفر</button>
+                    <input type="text" placeholder="سبب الإغلاق بصفر" className="rounded border border-slate-300 px-2 py-1 text-sm flex-1 min-w-32" value={zeroReason} onChange={e => setZeroReason(e.target.value)} />
                   </>
                 )}
                 {openStatus === 'sending' && (
                   <>
-                    <input type="text" placeholder="ÙØ±Ø¬Ø¹ Ø§ÙØªØ­ÙÙÙ Ø§ÙØ®Ø§Ø±Ø¬Ù" className="rounded border border-slate-300 px-2 py-2 text-sm flex-1 min-w-48" value={payoutRef} onChange={e => setPayoutRef(e.target.value)} />
-                    <button className="rounded bg-green-600 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting || !payoutRef} onClick={() => doPayout('confirm', { external_ref: payoutRef })}>ØªØ£ÙÙØ¯ Ø§ÙØªØ­ÙÙÙ</button>
-                    <button className="rounded bg-slate-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>Ø¥ÙØºØ§Ø¡</button>
+                    <input type="text" placeholder="مرجع التحويل الخارجي" className="rounded border border-slate-300 px-2 py-2 text-sm flex-1 min-w-48" value={payoutRef} onChange={e => setPayoutRef(e.target.value)} />
+                    <button className="rounded bg-green-600 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting || !payoutRef} onClick={() => doPayout('confirm', { external_ref: payoutRef })}>تأكيد التحويل</button>
+                    <button className="rounded bg-slate-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>إلغاء</button>
                   </>
                 )}
               </div>
             </div>
 
-            {/* ââ Recent payouts ââ */}
+            {/* Recent payouts */}
             {payouts.length > 0 && (
               <div className="rounded-lg border border-slate-200 bg-white p-4">
-                <h2 className="text-base font-bold text-[#17365F] mb-3">Ø§ÙØ¯ÙØ¹Ø§Øª Ø§ÙØ£Ø®ÙØ±Ø©</h2>
+                <h2 className="text-base font-bold text-[#17365F] mb-3">الدفعات الأخيرة</h2>
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50">
-                    <tr>{['#','Ø§ÙØ­Ø§ÙØ©','Ø§ÙØµØ§ÙÙ','ÙØ±Ø¬Ø¹','ØªØ§Ø±ÙØ® Ø§ÙØ¥ÙØ´Ø§Ø¡','ØªØ§Ø±ÙØ® Ø§ÙØ¥ØºÙØ§Ù'].map(h => <th key={h} className="px-2 py-2 text-right font-semibold text-slate-600">{h}</th>)}</tr>
+                    <tr>{['#','الحالة','الصافي','مرجع','تاريخ الإنشاء','تاريخ الإغلاق'].map(h => <th key={h} className="px-2 py-2 text-right font-semibold text-slate-600">{h}</th>)}</tr>
                   </thead>
                   <tbody>
                     {payouts.map(p => (
                       <tr key={p.id} className="border-t border-slate-100">
                         <td className="px-2 py-1">#{p.id}</td>
                         <td className="px-2 py-1">{p.status}</td>
-                        <td className="px-2 py-1">{egp(p.net_transferred)} Ø¬.Ù</td>
-                        <td className="px-2 py-1">{p.external_ref ?? 'â'}</td>
+                        <td className="px-2 py-1">{egp(p.net_transferred)} ج.م</td>
+                        <td className="px-2 py-1">{p.external_ref ?? '—'}</td>
                         <td className="px-2 py-1">{p.created_at?.slice(0, 10)}</td>
-                        <td className="px-2 py-1">{p.committed_at?.slice(0, 10) ?? 'â'}</td>
+                        <td className="px-2 py-1">{p.committed_at?.slice(0, 10) ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>
