@@ -73,10 +73,13 @@ export interface WPDriverOrder {
   assignedDriverId: number;
 }
 
-export async function getDriverOrders(driverId?: number): Promise<WPDriverOrder[]> {
+export async function getDriverOrders(driverId?: number, orderId?: number): Promise<WPDriverOrder[]> {
   const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
-  const query = driverId == null ? '' : `?driver_id=${encodeURIComponent(driverId)}`;
-  const url = `${getLiquidShipBase()}/driver-orders${query}`;
+  const params = new URLSearchParams();
+  if (driverId != null) params.set('driver_id', String(driverId));
+  if (orderId != null) params.set('order_id', String(orderId));
+  const qs = params.size ? `?${params}` : '';
+  const url = `${getLiquidShipBase()}/driver-orders${qs}`;
 
   const res = await fetch(url, {
     headers: {

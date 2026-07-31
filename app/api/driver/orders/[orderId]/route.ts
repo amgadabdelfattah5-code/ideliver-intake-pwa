@@ -23,8 +23,7 @@ export async function GET(
   }
 
   try {
-    // ponytail: no driver-assignment filter until ops are stable
-    const orders = await getDriverOrders();
+    const orders = await getDriverOrders(undefined, orderId);
     const order = orders.find((item) => item.orderId === orderId);
 
     if (!order) {
