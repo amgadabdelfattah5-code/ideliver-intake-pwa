@@ -250,7 +250,7 @@ export default function SettlementPage() {
                 <button
                   key={m.wpUserId}
                   type="button"
-                  className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-center text-sm text-slate-700 cursor-pointer hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                  className="idv-button idv-button-light w-full justify-center text-sm font-semibold"
                   onClick={() => { onMerchantChange(m.wpUserId); setMerchantSearch(''); }}
                 >
                   {m.identityLabel || `${m.name} (${m.merchantId})`}
