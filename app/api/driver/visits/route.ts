@@ -231,23 +231,18 @@ export async function POST(req: NextRequest) {
     : shippingFeeRecipient ?? 'us_cash';
 
   try {
-    const allAssignedOrders = await getDriverOrders(
-      session.role === 'driver' ? session.wpUserId : undefined
-    );
-    const matchedOrder = allAssignedOrders.find((order) => order.orderId === orderId);
+    // ponytail: no driver-assignment filter until ops are stable
+    const allOrders = await getDriverOrders();
+    const matchedOrder = allOrders.find((order) => order.orderId === orderId);
 
-    if (
-      !matchedOrder ||
-      !Number.isInteger(matchedOrder.assignedDriverId) ||
-      matchedOrder.assignedDriverId === 0
-    ) {
+    if (!matchedOrder) {
       return NextResponse.json(
-        { error: 'هذا الطلب غير مُسند لأي مندوب' },
-        { status: 403 }
+        { error: 'الطلب غير موجود' },
+        { status: 404 }
       );
     }
 
-    const effectiveDriverId = matchedOrder.assignedDriverId;
+    const effectiveDriverId = matchedOrder.assignedDriverId || session.wpUserId;
 
     let visit = await prisma.deliveryVisit.create({
       data: {

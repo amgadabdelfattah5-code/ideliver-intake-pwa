@@ -23,19 +23,14 @@ export async function GET(
   }
 
   try {
-    const orders = await getDriverOrders(
-      session.role === 'driver' ? session.wpUserId : undefined
-    );
+    // ponytail: no driver-assignment filter until ops are stable
+    const orders = await getDriverOrders();
     const order = orders.find((item) => item.orderId === orderId);
 
-    if (
-      !order ||
-      !Number.isInteger(order.assignedDriverId) ||
-      order.assignedDriverId === 0
-    ) {
+    if (!order) {
       return NextResponse.json(
-        { error: 'هذا الطلب غير مُسند لأي مندوب' },
-        { status: 403 }
+        { error: 'الطلب غير موجود' },
+        { status: 404 }
       );
     }
 
