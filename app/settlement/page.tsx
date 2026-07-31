@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface StaffUser { wpUserId: number; username: string; email: string; role: string; }
 interface Merchant { wpUserId: number; name: string; merchantId: string; }
@@ -34,6 +34,9 @@ export default function SettlementPage() {
   const [user, setUser] = useState<StaffUser | null>(null);
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [merchantId, setMerchantId] = useState<number>(0);
+  const [merchantSearch, setMerchantSearch] = useState('');
+  const [merchantDropdownOpen, setMerchantDropdownOpen] = useState(false);
+  const merchantInputRef = useRef<HTMLInputElement>(null);
   const [eligible, setEligible] = useState<EligibleOrder[]>([]);
   const [attention, setAttention] = useState<Attention[]>([]);
   const [totals, setTotals] = useState<{ count: number; lines_net: number } | null>(null);
@@ -208,6 +211,12 @@ export default function SettlementPage() {
 
   const netEgp = totals && balance ? ((totals.lines_net + balance.carry_balance) / 100).toFixed(2) : null;
   const openStatus = balance?.open_payout_status ?? null;
+  const selectedMerchant = merchants.find(m => m.wpUserId === merchantId);
+  const selectedMerchantName = selectedMerchant ? `${selectedMerchant.name} (${selectedMerchant.merchantId})` : '';
+  const filteredMerchants = merchants.filter(m => {
+    const query = merchantSearch.toLowerCase();
+    return m.name.toLowerCase().includes(query) || String(m.merchantId).toLowerCase().includes(query);
+  });
 
   return (
     <main className="min-h-screen bg-[#f6f8fb]" dir="rtl">
@@ -223,16 +232,47 @@ export default function SettlementPage() {
         {/* ââ Merchant picker ââ */}
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <label className="block text-sm font-semibold text-[#17365F] mb-1">Ø§ÙØªØ§Ø¬Ø±</label>
-          <select
-            className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-[#17365F]"
-            value={merchantId || ''}
-            onChange={e => onMerchantChange(Number(e.target.value))}
-          >
-            <option value="">â Ø§Ø®ØªØ± ØªØ§Ø¬Ø±Ø§Ù â</option>
-            {merchants.map(m => (
-              <option key={m.wpUserId} value={m.wpUserId}>{m.name} ({m.merchantId})</option>
-            ))}
-          </select>
+          <div className="relative">
+            <input
+              ref={merchantInputRef}
+              type="text"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-[#17365F]"
+              placeholder="ابحث عن تاجر..."
+              value={merchantDropdownOpen ? merchantSearch : selectedMerchantName || merchantSearch}
+              onClick={() => {
+                if (merchantId) setMerchantSearch('');
+                setMerchantDropdownOpen(true);
+              }}
+              onChange={e => {
+                setMerchantSearch(e.target.value);
+                setMerchantDropdownOpen(true);
+              }}
+              onBlur={() => setTimeout(() => setMerchantDropdownOpen(false), 150)}
+            />
+            {merchantDropdownOpen && (
+              <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
+                {filteredMerchants.length > 0 ? filteredMerchants.map(m => {
+                  const displayName = `${m.name} (${m.merchantId})`;
+                  return (
+                    <button
+                      key={m.wpUserId}
+                      type="button"
+                      className="block w-full px-3 py-2 text-right text-sm text-[#17365F] hover:bg-slate-100"
+                      onClick={() => {
+                        onMerchantChange(m.wpUserId);
+                        setMerchantDropdownOpen(false);
+                        setMerchantSearch(displayName);
+                      }}
+                    >
+                      {displayName}
+                    </button>
+                  );
+                }) : (
+                  <div className="px-3 py-2 text-sm text-slate-500">لا نتائج</div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {msg && (
@@ -294,34 +334,48 @@ export default function SettlementPage() {
                             <td className="px-2 py-1">{o.governorate}</td>
                             <td className="px-2 py-1">{o.order_status}</td>
                             <td className="px-2 py-1">
-                              <input
-                                type="number" step="0.01" min="0"
-                                className="w-20 rounded border border-slate-300 px-1 py-0.5 bg-yellow-50"
-                                value={edit.product_amount}
-                                onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, product_amount: e.target.value } }))}
-                              />
-                              <select
-                                className="mt-0.5 w-full rounded border border-slate-300 px-1 py-0.5 text-xs"
-                                value={edit.product_recipient}
-                                onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, product_recipient: e.target.value } }))}
-                              >
-                                {RECIP_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                              </select>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <input
+                                  type="number" step="0.01" min="0"
+                                  className="w-20 rounded border border-slate-300 px-1 py-0.5 bg-yellow-50"
+                                  value={edit.product_amount}
+                                  onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, product_amount: e.target.value } }))}
+                                />
+                                <div className="flex gap-1 flex-wrap">
+                                  {RECIP_OPTIONS.map(opt => (
+                                    <button
+                                      key={opt.value}
+                                      type="button"
+                                      className={`px-1.5 py-0.5 text-xs rounded ${edit.product_recipient === opt.value ? 'bg-[#17365F] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                      onClick={() => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, product_recipient: opt.value } }))}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
                             </td>
                             <td className="px-2 py-1">
-                              <input
-                                type="number" step="0.01" min="0"
-                                className="w-20 rounded border border-slate-300 px-1 py-0.5 bg-yellow-50"
-                                value={edit.shipping_amount}
-                                onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, shipping_amount: e.target.value } }))}
-                              />
-                              <select
-                                className="mt-0.5 w-full rounded border border-slate-300 px-1 py-0.5 text-xs"
-                                value={edit.shipping_recipient}
-                                onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, shipping_recipient: e.target.value } }))}
-                              >
-                                {RECIP_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                              </select>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <input
+                                  type="number" step="0.01" min="0"
+                                  className="w-20 rounded border border-slate-300 px-1 py-0.5 bg-yellow-50"
+                                  value={edit.shipping_amount}
+                                  onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, shipping_amount: e.target.value } }))}
+                                />
+                                <div className="flex gap-1 flex-wrap">
+                                  {RECIP_OPTIONS.map(opt => (
+                                    <button
+                                      key={opt.value}
+                                      type="button"
+                                      className={`px-1.5 py-0.5 text-xs rounded ${edit.shipping_recipient === opt.value ? 'bg-[#17365F] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                      onClick={() => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, shipping_recipient: opt.value } }))}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
                             </td>
                             <td className="px-2 py-1">
                               <button
