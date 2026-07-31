@@ -240,7 +240,7 @@ export default function SettlementPage() {
               />
               <button
                 type="button"
-                className="rounded bg-[#17365F] px-4 py-2 text-sm font-semibold text-white hover:bg-[#16335C] transition-colors cursor-pointer"
+                className="idv-button"
               >
                 بحث
               </button>
