@@ -1,0 +1,523 @@
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+
+interface AdminOrder {
+  orderId: number;
+  status: string;
+  customerName: string;
+  merchantName: string;
+  merchantIdentityLabel?: string;
+  paymentRef: string | null;
+}
+
+interface DataEntry {
+  recipientAddress: string;
+  recipientGovernorate: string;
+  recipientPhone: string;
+  price: string;
+  shippingFeePrinted: string;
+  total: string;
+  notes: string;
+}
+
+interface AdminRow {
+  orderId: number;
+  tracking: string;
+  currentStatus: string;
+  customerName: string;
+  merchantName: string;
+  merchantIdentityLabel: string;
+  recipientAddress: string;
+  recipientGovernorate: string;
+  recipientPhone: string;
+  printedPrice: string;
+  printedShippingFee: string;
+  printedTotal: string;
+  notes: string;
+  paymentRef: string;
+}
+
+interface AdminFilters {
+  tracking: string;
+  merchantName: string;
+  customerName: string;
+  recipientGovernorate: string;
+  recipientAddress: string;
+  recipientPhone: string;
+  printedPrice: string;
+  printedShippingFee: string;
+  printedTotal: string;
+  currentStatus: string;
+  notes: string;
+  paymentRef: string;
+}
+
+const columnWidths = [
+  '6%', '11%', '9%', '7%', '14%', '9%', '7%', '7%', '7%', '8%', '8%', '7%',
+];
+
+const statusLabels: Record<string, string> = {
+  pending: 'بانتظار الدفع',
+  processing: 'قيد المعالجة',
+  'shipment-rec': 'تم استلام الشحنة',
+  shipped: 'قيد التوصيل',
+  delivered: 'تم التوصيل',
+  'on-hold': 'قيد الانتظار',
+  completed: 'تم التوريد للتاجر',
+  'merchant-paid': 'تم التحويل للتاجر',
+  'merchant-sup': 'تم التوريد للتاجر',
+  postponed: 'مؤجل',
+  'value-transferred': 'تم تحويل قيمة الشحنة',
+  'refunded-merchant': 'مرتجع (شحن على التاجر)',
+  'refund-ship': 'مرتجع (شحن محصل)',
+  'delivered-wallet': 'تم التوصيل (محول محفظة)',
+  'sh-val-transfer': 'تم تحويل قيمة الشحن فقط',
+  cancelled: 'ملغي',
+  refunded: 'مرتجع (محصل شحن)',
+  failed: 'فشل',
+  'checkout-draft': 'مسودة',
+  'returned-full': 'مرتجع كامل',
+  'returned-partial': 'مرتجع جزئي',
+};
+
+const initialFilters: AdminFilters = {
+  tracking: '',
+  merchantName: '',
+  customerName: '',
+  recipientGovernorate: '',
+  recipientAddress: '',
+  recipientPhone: '',
+  printedPrice: '',
+  printedShippingFee: '',
+  printedTotal: '',
+  currentStatus: '',
+  notes: '',
+  paymentRef: '',
+};
+
+function statusLabel(value: string): string {
+  return statusLabels[value] ?? value;
+}
+
+function exportRowsToCSV(rows: AdminRow[]) {
+  const escape = (value: string | number) => {
+    const raw = String(value ?? '');
+    const safe = /^[=+\-@\t\r]/.test(raw) ? "'" + raw : raw;
+    const cleaned = safe.replace(/[\r\n]/g, ' ');
+    return /[",]/.test(cleaned) ? '"' + cleaned.replace(/"/g, '""') + '"' : cleaned;
+  };
+
+  const headers = [
+    'رقم الطلب',
+    'التاجر',
+    'المستلم',
+    'المحافظة',
+    'العنوان',
+    'رقم الهاتف',
+    'سعر المنتج',
+    'مصاريف الشحن',
+    'الإجمالي',
+    'الحالة',
+    'ملاحظات',
+    'مرجع الدفع',
+  ];
+  const lines = [
+    '\uFEFF' + headers.map(escape).join(','),
+    ...rows.map((row) =>
+      [
+        row.orderId,
+        row.merchantIdentityLabel || row.merchantName,
+        row.customerName,
+        row.recipientGovernorate,
+        row.recipientAddress,
+        row.recipientPhone,
+        row.printedPrice,
+        row.printedShippingFee,
+        row.printedTotal,
+        statusLabel(row.currentStatus),
+        row.notes,
+        row.paymentRef,
+      ]
+        .map(escape)
+        .join(',')
+    ),
+  ];
+  const url = URL.createObjectURL(
+    new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  );
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'admin-orders-' + new Date().toISOString().slice(0, 10) + '.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export default function AdminOrdersPage() {
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [rows, setRows] = useState<AdminRow[]>([]);
+  const [filters, setFilters] = useState<AdminFilters>(initialFilters);
+  const [accessState, setAccessState] =
+    useState<'checking' | 'allowed' | 'forbidden'>('checking');
+  const [loading, setLoading] = useState(true);
+  const [dataEntriesLoadState, setDataEntriesLoadState] =
+    useState<'idle' | 'loading' | 'loaded' | 'failed'>('idle');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDataEntries(orderIds: number[]) {
+      if (orderIds.length === 0) return;
+      setDataEntriesLoadState('loading');
+
+      try {
+        const ids = orderIds.join(',');
+        const detailsResponse = await fetch(
+          `/api/driver/orders/data-entries?ids=${encodeURIComponent(ids)}`
+        );
+        const detailsData = await detailsResponse.json();
+        if (!detailsResponse.ok) {
+          throw new Error(detailsData.error || 'data_entries_failed');
+        }
+        if (cancelled) return;
+
+        setRows((previousRows) =>
+          previousRows.map((row) => {
+            const entry = detailsData.dataEntries?.[String(row.orderId)] as
+              | DataEntry
+              | undefined;
+            if (!entry) return row;
+
+            return {
+              ...row,
+              recipientAddress: entry.recipientAddress,
+              recipientGovernorate: entry.recipientGovernorate,
+              recipientPhone: entry.recipientPhone,
+              printedPrice: entry.price,
+              printedShippingFee: entry.shippingFeePrinted,
+              printedTotal: entry.total,
+              notes: entry.notes,
+            };
+          })
+        );
+        if (!cancelled) setDataEntriesLoadState('loaded');
+      } catch {
+        if (!cancelled) setDataEntriesLoadState('failed');
+      }
+    }
+
+    async function loadRows() {
+      try {
+        const authResponse = await fetch('/api/auth/me');
+        const authData = await authResponse.json();
+        if (!authResponse.ok) throw new Error('تعذّر التحقق من الحساب');
+
+        if (authData.user?.role !== 'admin') {
+          if (!cancelled) setAccessState('forbidden');
+          return;
+        }
+
+        if (cancelled) return;
+        setAccessState('allowed');
+
+        const ordersResponse = await fetch(`/api/admin/orders?page=${page}`);
+        const ordersData = await ordersResponse.json();
+        if (!ordersResponse.ok) {
+          throw new Error(ordersData.error || 'تعذّر تحميل الطلبات');
+        }
+
+        if (cancelled) return;
+        const orders = (ordersData.orders || []) as AdminOrder[];
+        setTotalPages(Math.max(1, Number(ordersData.pages) || 1));
+        setRows(
+          orders.map((order) => ({
+            orderId: order.orderId,
+            tracking: String(order.orderId),
+            currentStatus: order.status,
+            customerName: order.customerName,
+            merchantName: order.merchantName,
+            merchantIdentityLabel: order.merchantIdentityLabel || order.merchantName,
+            recipientAddress: '',
+            recipientGovernorate: '',
+            recipientPhone: '',
+            printedPrice: '',
+            printedShippingFee: '',
+            printedTotal: '',
+            notes: '',
+            paymentRef: order.paymentRef || '',
+          }))
+        );
+        void loadDataEntries(orders.map((order) => order.orderId));
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(
+            loadError instanceof Error ? loadError.message : 'تعذّر تحميل الطلبات'
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadRows();
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
+
+  const visibleRows = useMemo(() => {
+    const normalizedFilters = Object.fromEntries(
+      Object.entries(filters).map(([key, value]) => [key, value.toLocaleLowerCase()])
+    ) as Record<keyof AdminFilters, string>;
+
+    return rows.filter(
+      (row) =>
+        row.tracking.toLocaleLowerCase().includes(normalizedFilters.tracking) &&
+        row.merchantName.toLocaleLowerCase().includes(normalizedFilters.merchantName) &&
+        row.customerName.toLocaleLowerCase().includes(normalizedFilters.customerName) &&
+        row.recipientGovernorate
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.recipientGovernorate) &&
+        row.recipientAddress
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.recipientAddress) &&
+        row.recipientPhone.toLocaleLowerCase().includes(normalizedFilters.recipientPhone) &&
+        row.printedPrice.toLocaleLowerCase().includes(normalizedFilters.printedPrice) &&
+        row.printedShippingFee
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.printedShippingFee) &&
+        row.printedTotal.toLocaleLowerCase().includes(normalizedFilters.printedTotal) &&
+        row.currentStatus.toLocaleLowerCase().includes(normalizedFilters.currentStatus) &&
+        row.notes.toLocaleLowerCase().includes(normalizedFilters.notes) &&
+        row.paymentRef.toLocaleLowerCase().includes(normalizedFilters.paymentRef)
+    );
+  }, [filters, rows]);
+
+  const filterOptions = useMemo(() => {
+    function distinct(get: (row: AdminRow) => string): string[] {
+      return Array.from(new Set(rows.map(get).filter((value) => value.trim() !== ''))).sort(
+        (a, b) => a.localeCompare(b, 'ar')
+      );
+    }
+
+    return {
+      tracking: distinct((row) => row.tracking),
+      merchantName: distinct((row) => row.merchantName),
+      customerName: distinct((row) => row.customerName),
+      recipientGovernorate: distinct((row) => row.recipientGovernorate),
+      recipientAddress: distinct((row) => row.recipientAddress),
+      recipientPhone: distinct((row) => row.recipientPhone),
+      printedPrice: distinct((row) => row.printedPrice),
+      printedShippingFee: distinct((row) => row.printedShippingFee),
+      printedTotal: distinct((row) => row.printedTotal),
+      currentStatus: distinct((row) => row.currentStatus),
+      notes: distinct((row) => row.notes),
+      paymentRef: distinct((row) => row.paymentRef),
+    } satisfies Record<keyof AdminFilters, string[]>;
+  }, [rows]);
+
+  function renderFilterCell(
+    key: keyof AdminFilters,
+    label: string,
+    optionLabel?: (value: string) => string
+  ) {
+    const datalistId = `admin-orders-filter-${key}`;
+    return (
+      <th className="overflow-hidden p-1" key={key}>
+        <input
+          aria-label={`تصفية حسب ${label}`}
+          className="h-7 w-full min-w-0 rounded border border-slate-300 bg-white px-1 font-medium text-slate-800 outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+          list={datalistId}
+          onChange={(event) =>
+            setFilters((currentFilters) => ({
+              ...currentFilters,
+              [key]: event.target.value,
+            }))
+          }
+          placeholder="تصفية..."
+          value={filters[key]}
+        />
+        <datalist id={datalistId}>
+          {filterOptions[key].map((option) => (
+            <option key={option} label={optionLabel?.(option)} value={option} />
+          ))}
+        </datalist>
+      </th>
+    );
+  }
+
+  function changePage(nextPage: number) {
+    setRows([]);
+    setLoading(true);
+    setError('');
+    setDataEntriesLoadState('idle');
+    setFilters(initialFilters);
+    setPage(nextPage);
+  }
+
+  if (accessState === 'forbidden') {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-4 text-[#17365F]">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm">
+          <p className="font-bold">غير متاح لهذا الحساب</p>
+          <Link className="idv-button idv-button-light idv-button-small mt-4 text-sm" href="/">
+            رجوع
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f6f8fb] text-[#17365F]">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-[1900px] items-center justify-between px-4 py-4">
+          <div>
+            <p className="text-sm font-semibold text-[#F27321]">iDeliver Egypt</p>
+            <h1 className="text-xl font-bold">كل الطلبات</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="idv-button idv-button-light idv-button-small text-sm"
+              disabled={
+                loading || dataEntriesLoadState === 'loading' || visibleRows.length === 0
+              }
+              onClick={() => exportRowsToCSV(visibleRows)}
+              type="button"
+            >
+              تنزيل CSV
+            </button>
+            <Link className="idv-button idv-button-light idv-button-small text-sm" href="/">
+              رجوع
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-[1900px] px-4 py-6">
+        {loading && <p className="text-sm font-medium">جاري تحميل الطلبات...</p>}
+
+        {error && (
+          <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+            {error}
+          </p>
+        )}
+
+        {!loading && !error && rows.length === 0 && (
+          <p className="rounded-lg border border-slate-200 bg-white p-5 text-sm font-medium text-slate-600 shadow-sm">
+            لا توجد طلبات حالياً.
+          </p>
+        )}
+
+        {!loading && !error && rows.length > 0 && (
+          <>
+            <div className="mb-3 rounded-lg border border-slate-200 bg-white shadow-sm">
+              <table className="w-full table-fixed border-collapse text-right text-[11px]">
+                <colgroup>
+                  {columnWidths.map((width, index) => (
+                    <col key={index} style={{ width }} />
+                  ))}
+                </colgroup>
+                <tbody>
+                  <tr className="align-middle">
+                    {renderFilterCell('tracking', 'رقم الطلب')}
+                    {renderFilterCell('merchantName', 'التاجر')}
+                    {renderFilterCell('customerName', 'المستلم')}
+                    {renderFilterCell('recipientGovernorate', 'المحافظة')}
+                    {renderFilterCell('recipientAddress', 'العنوان')}
+                    {renderFilterCell('recipientPhone', 'رقم الهاتف')}
+                    {renderFilterCell('printedPrice', 'سعر المنتج')}
+                    {renderFilterCell('printedShippingFee', 'مصاريف الشحن')}
+                    {renderFilterCell('printedTotal', 'الإجمالي')}
+                    {renderFilterCell('currentStatus', 'الحالة', statusLabel)}
+                    {renderFilterCell('notes', 'ملاحظات')}
+                    {renderFilterCell('paymentRef', 'مرجع الدفع')}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+              <table className="w-full table-fixed border-collapse text-right text-[11px]">
+                <colgroup>
+                  {columnWidths.map((width, index) => (
+                    <col key={index} style={{ width }} />
+                  ))}
+                </colgroup>
+                <thead className="bg-slate-100 text-[#17365F]">
+                  <tr className="align-top">
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">رقم الطلب</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">التاجر</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">المستلم</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">المحافظة</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">العنوان</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">رقم الهاتف</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">سعر المنتج</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">مصاريف الشحن</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">الإجمالي</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">الحالة</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">ملاحظات</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">مرجع الدفع</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {visibleRows.map((row) => (
+                    <tr className="align-top" key={row.orderId}>
+                      <td className="overflow-hidden truncate p-1 font-bold text-slate-800" title={row.tracking || undefined}>{row.tracking || '—'}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantIdentityLabel || undefined}>{row.merchantIdentityLabel || '—'}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.customerName || undefined}>{row.customerName || '—'}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientGovernorate || undefined}>{row.recipientGovernorate || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700" title={row.recipientAddress || undefined}>{row.recipientAddress || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientPhone || undefined}>{row.recipientPhone || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.printedPrice || undefined}>{row.printedPrice || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.printedShippingFee || undefined}>{row.printedShippingFee || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.printedTotal || undefined}>{row.printedTotal || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={statusLabel(row.currentStatus)}>{statusLabel(row.currentStatus) || '—'}</td>
+                      <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700" title={row.notes || undefined}>{row.notes || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden p-1 font-semibold">
+                        {row.paymentRef ? (
+                          <span className="rounded bg-green-50 px-1 text-green-700" title={row.paymentRef}>{row.paymentRef}</span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {visibleRows.length === 0 && (
+                <p className="p-5 text-center text-sm font-medium text-slate-600">
+                  لا توجد طلبات تطابق عوامل التصفية.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-4">
+              <button
+                className="idv-button idv-button-light idv-button-small text-sm"
+                disabled={page === 1}
+                onClick={() => changePage(page - 1)}
+                type="button"
+              >
+                ← السابق
+              </button>
+              <p className="text-sm font-semibold">صفحة {page} من {totalPages}</p>
+              <button
+                className="idv-button idv-button-light idv-button-small text-sm"
+                disabled={page === totalPages}
+                onClick={() => changePage(page + 1)}
+                type="button"
+              >
+                التالي →
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+    </main>
+  );
+}

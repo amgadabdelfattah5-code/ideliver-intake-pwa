@@ -286,6 +286,22 @@ export default function Home() {
 
         {user.role === 'admin' && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">إدارة الطلبات</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">كل الطلبات</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              اعرض كل طلبات WooCommerce وحالاتها وبياناتها ومرجع الدفع في جدول واحد.
+            </p>
+            <Link
+              className="idv-button idv-button-orange mt-5 h-10 text-sm"
+              href="/admin/orders"
+            >
+              فتح كل الطلبات
+            </Link>
+          </div>
+        )}
+
+        {user.role === 'admin' && (
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">التسوية المالية</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">تسوية حساب التاجر</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
