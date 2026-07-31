@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface StaffUser { wpUserId: number; username: string; email: string; role: string; }
-interface Merchant { wpUserId: number; name: string; merchantId: string; }
+interface Merchant { wpUserId: number; name: string; merchantId: string; identityLabel?: string; }
 interface EligibleOrder {
   order_id: number; order_status: string;
   product_credit: number; shipping_charge: number; order_net: number;
@@ -35,9 +35,6 @@ export default function SettlementPage() {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [merchantId, setMerchantId] = useState<number>(0);
   const [merchantSearch, setMerchantSearch] = useState('');
-  const [merchantDropdownOpen, setMerchantDropdownOpen] = useState(false);
-  const merchantInputRef = useRef<HTMLInputElement>(null);
-  const merchantContainerRef = useRef<HTMLDivElement>(null);
   const [eligible, setEligible] = useState<EligibleOrder[]>([]);
   const [attention, setAttention] = useState<Attention[]>([]);
   const [totals, setTotals] = useState<{ count: number; lines_net: number } | null>(null);
@@ -68,16 +65,6 @@ export default function SettlementPage() {
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => setUser(d?.user ?? null));
     fetch('/api/merchants').then(r => r.ok ? r.json() : null).then(d => setMerchants(d?.merchants ?? []));
-  }, []);
-
-  useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (merchantContainerRef.current && !merchantContainerRef.current.contains(e.target as Node)) {
-        setMerchantDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
 
   async function loadData(mid: number) {
@@ -218,10 +205,14 @@ export default function SettlementPage() {
   const netEgp = totals && balance ? ((totals.lines_net + balance.carry_balance) / 100).toFixed(2) : null;
   const openStatus = balance?.open_payout_status ?? null;
   const selectedMerchant = merchants.find(m => m.wpUserId === merchantId);
-  const selectedMerchantName = selectedMerchant ? `${selectedMerchant.name} (${selectedMerchant.merchantId})` : '';
   const filteredMerchants = merchants.filter(m => {
     const query = merchantSearch.toLowerCase();
-    return m.name.toLowerCase().includes(query) || String(m.merchantId).toLowerCase().includes(query);
+    if (!query) return true;
+    return (
+      m.name.toLowerCase().includes(query) ||
+      String(m.merchantId).toLowerCase().includes(query) ||
+      (m.identityLabel || '').toLowerCase().includes(query)
+    );
   });
 
   return (
@@ -236,49 +227,57 @@ export default function SettlementPage() {
       <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
 
         {/* Merchant picker */}
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <label className="block text-sm font-semibold text-[#17365F] mb-1">التاجر</label>
-          <div className="relative" ref={merchantContainerRef}>
-            <input
-              ref={merchantInputRef}
-              type="text"
-              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-[#17365F]"
-              placeholder="ابحث عن تاجر..."
-              value={merchantDropdownOpen ? merchantSearch : selectedMerchantName || merchantSearch}
-              onClick={() => {
-                if (merchantId) setMerchantSearch('');
-                setMerchantDropdownOpen(true);
-              }}
-              onChange={e => {
-                setMerchantSearch(e.target.value);
-                setMerchantDropdownOpen(true);
-              }}
-            />
-            {merchantDropdownOpen && (
-              <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
-                {filteredMerchants.length > 0 ? filteredMerchants.map(m => {
-                  const displayName = `${m.name} (${m.merchantId})`;
-                  return (
-                    <button
-                      key={m.wpUserId}
-                      type="button"
-                      className="block w-full px-3 py-2 text-right text-sm text-[#17365F] hover:bg-slate-100"
-                      onClick={() => {
-                        onMerchantChange(m.wpUserId);
-                        setMerchantDropdownOpen(false);
-                        setMerchantSearch(displayName);
-                      }}
-                    >
-                      {displayName}
-                    </button>
-                  );
-                }) : (
-                  <div className="px-3 py-2 text-sm text-slate-500">لا نتائج</div>
-                )}
-              </div>
-            )}
+        {merchantId === 0 ? (
+          <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+            <label className="block text-sm font-semibold text-[#17365F]">البحث عن التاجر</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="flex-1 rounded border border-slate-300 px-3 py-2 text-sm text-[#17365F]"
+                placeholder="اسم التاجر أو الهاتف أو الرقم"
+                value={merchantSearch}
+                onChange={e => setMerchantSearch(e.target.value)}
+              />
+              <button
+                type="button"
+                className="rounded bg-[#17365F] px-4 py-2 text-sm font-semibold text-white hover:bg-[#16335C] transition-colors cursor-pointer"
+              >
+                بحث
+              </button>
+            </div>
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {filteredMerchants.map(m => (
+                <button
+                  key={m.wpUserId}
+                  type="button"
+                  className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-center text-sm text-slate-700 cursor-pointer hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                  onClick={() => { onMerchantChange(m.wpUserId); setMerchantSearch(''); }}
+                >
+                  {m.identityLabel || `${m.name} (${m.merchantId})`}
+                </button>
+              ))}
+              {filteredMerchants.length === 0 && (
+                <p className="text-center text-sm text-slate-400 py-4">لا نتائج</p>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-lg border border-slate-200 bg-white p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-500">التاجر المحدد</p>
+              <p className="text-sm font-semibold text-[#17365F]">
+                {selectedMerchant?.identityLabel || selectedMerchant?.name || merchantId}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="rounded border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+              onClick={() => { setMerchantId(0); setMerchantSearch(''); setEligible([]); setAttention([]); setTotals(null); setBalance(null); setUnclaimedAdj([]); setClaimedAdj([]); setPayouts([]); }}
+            >
+              تغيير
+            </button>
+          </div>
+        )}
 
         {msg && (
           <div className="rounded border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-800">{msg}</div>
