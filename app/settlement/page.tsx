@@ -250,7 +250,7 @@ export default function SettlementPage() {
                 <button
                   key={m.wpUserId}
                   type="button"
-                  className="w-full rounded-full border border-[rgba(23,54,95,0.22)] bg-white px-4 py-3 text-center text-sm font-semibold text-[#17365F] cursor-pointer shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0.5 transition-all"
+                  className="idv-button idv-button-light w-full justify-center text-sm font-semibold"
                   onClick={() => { onMerchantChange(m.wpUserId); setMerchantSearch(''); }}
                 >
                   {m.identityLabel || `${m.name} (${m.merchantId})`}
@@ -431,7 +431,7 @@ export default function SettlementPage() {
                     onChange={e => setAdjReason(e.target.value)}
                   />
                   <button
-                    className="rounded bg-[#17365F] px-3 py-1 text-sm text-white hover:bg-[#16335C] disabled:opacity-50"
+                    className="idv-button idv-button-small disabled:opacity-50"
                     disabled={adjSubmitting || !adjAmount || !adjReason}
                     onClick={() => addAdj(adjReason, adjAmount)}
                   >
@@ -450,7 +450,8 @@ export default function SettlementPage() {
                     onChange={e => setOnAcctAmount(e.target.value)}
                   />
                   <button
-                    className="rounded bg-amber-600 px-3 py-1 text-sm text-white hover:bg-amber-700 disabled:opacity-50"
+                    className="idv-button idv-button-small disabled:opacity-50"
+                    style={{ '--idv-bg': '#d97706', '--idv-shadow': 'rgba(120,53,15,0.45)' } as React.CSSProperties}
                     disabled={adjSubmitting || !onAcctAmount}
                     onClick={() => addAdj('تحت الحساب', onAcctAmount)}
                   >
@@ -486,13 +487,13 @@ export default function SettlementPage() {
                             {editingAdj === a.id ? (
                               <>
                                 <input type="number" step="0.01" className="rounded border border-slate-300 px-1 py-0.5 w-20" value={editAdjAmount} onChange={e => setEditAdjAmount(e.target.value)} />
-                                <button className="rounded bg-green-600 px-2 py-0.5 text-white text-xs" onClick={() => saveAdjEdit(a.id)}>حفظ</button>
-                                <button className="rounded bg-slate-400 px-2 py-0.5 text-white text-xs" onClick={() => setEditingAdj(null)}>إلغاء</button>
+                                <button className="idv-button idv-button-small" style={{ '--idv-bg': '#16a34a', '--idv-shadow': 'rgba(8,60,20,0.45)' } as React.CSSProperties} onClick={() => saveAdjEdit(a.id)}>حفظ</button>
+                                <button className="idv-button idv-button-small" style={{ '--idv-bg': '#94a3b8', '--idv-shadow': 'rgba(40,40,60,0.35)' } as React.CSSProperties} onClick={() => setEditingAdj(null)}>إلغاء</button>
                               </>
                             ) : (
                               <>
-                                <button className="rounded bg-blue-600 px-2 py-0.5 text-white text-xs" onClick={() => { setEditingAdj(a.id); setEditAdjAmount(egp(a.amount)); setEditAdjReason(a.reason); }}>تعديل</button>
-                                <button className="rounded bg-red-600 px-2 py-0.5 text-white text-xs" onClick={() => deleteAdj(a.id)}>حذف</button>
+                                <button className="idv-button idv-button-small" style={{ '--idv-bg': '#2563eb', '--idv-shadow': 'rgba(20,40,120,0.45)' } as React.CSSProperties} onClick={() => { setEditingAdj(a.id); setEditAdjAmount(egp(a.amount)); setEditAdjReason(a.reason); }}>تعديل</button>
+                                <button className="idv-button idv-button-small" style={{ '--idv-bg': '#dc2626', '--idv-shadow': 'rgba(120,10,10,0.45)' } as React.CSSProperties} onClick={() => deleteAdj(a.id)}>حذف</button>
                               </>
                             )}
                           </td>
@@ -530,13 +531,15 @@ export default function SettlementPage() {
             {/* Excel buttons */}
             <div className="rounded-lg border border-slate-200 bg-white p-4 flex gap-3 flex-wrap">
               <button
-                className="rounded bg-green-700 px-4 py-2 text-sm text-white hover:bg-green-800"
+                className="idv-button"
+                style={{ '--idv-bg': '#15803d', '--idv-shadow': 'rgba(8,60,20,0.45)' } as React.CSSProperties}
                 onClick={() => { window.location.href = `/api/settlement/export?merchant_id=${merchantId}&type=main`; }}
               >
                 تحميل Excel (رئيسي)
               </button>
               <button
-                className="rounded bg-teal-700 px-4 py-2 text-sm text-white hover:bg-teal-800"
+                className="idv-button"
+                style={{ '--idv-bg': '#0f766e', '--idv-shadow': 'rgba(8,55,50,0.45)' } as React.CSSProperties}
                 onClick={() => { window.location.href = `/api/settlement/export?merchant_id=${merchantId}&type=review`; }}
               >
                 تحميل Excel (مراجعة)
@@ -571,7 +574,7 @@ export default function SettlementPage() {
               <div className="flex gap-2 flex-wrap">
                 {!openStatus && (
                   <button
-                    className="rounded bg-[#17365F] px-4 py-2 text-sm text-white hover:bg-[#16335C] disabled:opacity-50"
+                    className="idv-button disabled:opacity-50"
                     disabled={payoutSubmitting}
                     onClick={() => doPayout('prepare')}
                   >
@@ -580,17 +583,17 @@ export default function SettlementPage() {
                 )}
                 {openStatus === 'draft' && (
                   <>
-                    <button className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting} onClick={() => doPayout('begin')}>بدء التحويل</button>
-                    <button className="rounded bg-slate-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>إلغاء</button>
-                    <button className="rounded bg-amber-600 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting || !zeroReason} onClick={() => doPayout('commit_zero', { reason: zeroReason })}>إغلاق بصفر</button>
+                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#2563eb', '--idv-shadow': 'rgba(20,40,120,0.45)' } as React.CSSProperties} disabled={payoutSubmitting} onClick={() => doPayout('begin')}>بدء التحويل</button>
+                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#64748b', '--idv-shadow': 'rgba(40,40,60,0.35)' } as React.CSSProperties} disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>إلغاء</button>
+                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#d97706', '--idv-shadow': 'rgba(120,53,15,0.45)' } as React.CSSProperties} disabled={payoutSubmitting || !zeroReason} onClick={() => doPayout('commit_zero', { reason: zeroReason })}>إغلاق بصفر</button>
                     <input type="text" placeholder="سبب الإغلاق بصفر" className="rounded border border-slate-300 px-2 py-1 text-sm flex-1 min-w-32" value={zeroReason} onChange={e => setZeroReason(e.target.value)} />
                   </>
                 )}
                 {openStatus === 'sending' && (
                   <>
                     <input type="text" placeholder="مرجع التحويل الخارجي" className="rounded border border-slate-300 px-2 py-2 text-sm flex-1 min-w-48" value={payoutRef} onChange={e => setPayoutRef(e.target.value)} />
-                    <button className="rounded bg-green-600 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting || !payoutRef} onClick={() => doPayout('confirm', { external_ref: payoutRef })}>تأكيد التحويل</button>
-                    <button className="rounded bg-slate-500 px-4 py-2 text-sm text-white disabled:opacity-50" disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>إلغاء</button>
+                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#16a34a', '--idv-shadow': 'rgba(8,60,20,0.45)' } as React.CSSProperties} disabled={payoutSubmitting || !payoutRef} onClick={() => doPayout('confirm', { external_ref: payoutRef })}>تأكيد التحويل</button>
+                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#64748b', '--idv-shadow': 'rgba(40,40,60,0.35)' } as React.CSSProperties} disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>إلغاء</button>
                   </>
                 )}
               </div>
