@@ -160,6 +160,8 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [pageInput, setPageInput] = useState('1');
+  const [serialInput, setSerialInput] = useState('1');
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [filters, setFilters] = useState<AdminFilters>(initialFilters);
   const [accessState, setAccessState] =
@@ -360,6 +362,20 @@ export default function AdminOrdersPage() {
     setDataEntriesLoadState('idle');
     setFilters(initialFilters);
     setPage(nextPage);
+    setPageInput(String(nextPage));
+    setSerialInput(String((nextPage - 1) * PER_PAGE + 1));
+  }
+
+  function handlePageInput(value: string) {
+    const n = parseInt(value, 10);
+    if (!isNaN(n) && n >= 1 && n <= totalPages) changePage(n);
+    else setPageInput(String(page));
+  }
+
+  function handleSerialInput(value: string) {
+    const n = parseInt(value, 10);
+    if (!isNaN(n) && n >= 1 && n <= total) changePage(Math.ceil(n / PER_PAGE));
+    else setSerialInput(String((page - 1) * PER_PAGE + 1));
   }
 
   if (accessState === 'forbidden') {
@@ -512,9 +528,27 @@ export default function AdminOrdersPage() {
               >
                 ← السابق
               </button>
-              <p className="text-sm font-semibold">
-                {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, total)} من {total} &nbsp;|&nbsp; صفحة {page} من {totalPages}
-              </p>
+              <span className="flex items-center gap-1 text-sm font-semibold">
+                <input
+                  aria-label="الانتقال إلى رقم مسلسل"
+                  className="w-14 rounded border border-slate-300 bg-white px-1 text-center font-semibold outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+                  value={serialInput}
+                  onChange={(e) => setSerialInput(e.target.value)}
+                  onBlur={(e) => handleSerialInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSerialInput(serialInput); }}
+                />
+                –{Math.min(page * PER_PAGE, total)} من {total}
+                &nbsp;|&nbsp; صفحة{' '}
+                <input
+                  aria-label="الانتقال إلى صفحة"
+                  className="w-10 rounded border border-slate-300 bg-white px-1 text-center font-semibold outline-none focus:border-[#F27321] focus:ring-2 focus:ring-[#F27321]/20"
+                  value={pageInput}
+                  onChange={(e) => setPageInput(e.target.value)}
+                  onBlur={(e) => handlePageInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handlePageInput(pageInput); }}
+                />
+                {' '}من {totalPages}
+              </span>
               <button
                 className="idv-button idv-button-light idv-button-small text-sm"
                 disabled={page === totalPages}
