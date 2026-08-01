@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import * as XLSX from 'xlsx';
 
 interface AdminOrder {
   orderId: number;
@@ -123,67 +124,34 @@ function statusLabel(value: string): string {
   return statusLabels[value] ?? value;
 }
 
-function exportRowsToCSV(rows: AdminRow[]) {
-  const escape = (value: string | number) => {
-    const raw = String(value ?? '');
-    const safe = /^[=+\-@\t\r]/.test(raw) ? "'" + raw : raw;
-    const cleaned = safe.replace(/[\r\n]/g, ' ');
-    return /[",]/.test(cleaned) ? '"' + cleaned.replace(/"/g, '""') + '"' : cleaned;
-  };
-
-  const headers = [
-    'رقم الطلب',
-    'التاجر',
-    'المستلم',
-    'المحافظة',
-    'العنوان',
-    'رقم الهاتف',
-    'سعر المنتج',
-    'مصاريف الشحن',
-    'الإجمالي',
-    'سعر المنتج المحصّل',
-    'مصاريف الشحن المحصّلة',
-    'الإجمالي المحصّل',
-    'مستلم المنتج',
-    'مستلم الشحن',
-    'الحالة',
-    'ملاحظات',
-    'مرجع الدفع',
+function exportRowsToXLSX(rows: AdminRow[]) {
+  const data = [
+    ['رقم الطلب', 'التاجر', 'المستلم', 'المحافظة', 'العنوان', 'رقم الهاتف', 'سعر المنتج', 'مصاريف الشحن', 'الإجمالي', 'سعر المنتج المحصّل', 'مصاريف الشحن المحصّلة', 'الإجمالي المحصّل', 'مستلم المنتج', 'مستلم الشحن', 'الحالة', 'ملاحظات', 'مرجع الدفع'],
+    ...rows.map((row) => [
+      row.orderId,
+      row.merchantIdentityLabel || row.merchantName,
+      row.customerName,
+      row.recipientGovernorate,
+      row.recipientAddress,
+      row.recipientPhone,
+      row.printedPrice,
+      row.printedShippingFee,
+      row.printedTotal,
+      row.collectedPrice,
+      row.collectedShippingFee,
+      row.collectedTotal,
+      recipientLabels[row.productPriceRecipient] || '',
+      recipientLabels[row.shippingFeeRecipient] || '',
+      statusLabel(row.currentStatus),
+      row.notes,
+      row.paymentRef,
+    ]),
   ];
-  const lines = [
-    '\uFEFF' + headers.map(escape).join(','),
-    ...rows.map((row) =>
-      [
-        row.orderId,
-        row.merchantIdentityLabel || row.merchantName,
-        row.customerName,
-        row.recipientGovernorate,
-        row.recipientAddress,
-        row.recipientPhone,
-        row.printedPrice,
-        row.printedShippingFee,
-        row.printedTotal,
-        row.collectedPrice,
-        row.collectedShippingFee,
-        row.collectedTotal,
-        recipientLabels[row.productPriceRecipient] || '—',
-        recipientLabels[row.shippingFeeRecipient] || '—',
-        statusLabel(row.currentStatus),
-        row.notes,
-        row.paymentRef,
-      ]
-        .map(escape)
-        .join(',')
-    ),
-  ];
-  const url = URL.createObjectURL(
-    new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
-  );
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'admin-orders-' + new Date().toISOString().slice(0, 10) + '.csv';
-  link.click();
-  URL.revokeObjectURL(url);
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  wb.Workbook = { Views: [{ RTL: true }] };
+  XLSX.utils.book_append_sheet(wb, ws, 'الطلبات');
+  XLSX.writeFile(wb, 'admin-orders-' + new Date().toISOString().slice(0, 10) + '.xlsx');
 }
 
 export default function AdminOrdersPage() {
@@ -448,10 +416,10 @@ export default function AdminOrdersPage() {
               disabled={
                 loading || dataEntriesLoadState === 'loading' || visibleRows.length === 0
               }
-              onClick={() => exportRowsToCSV(visibleRows)}
+              onClick={() => exportRowsToXLSX(visibleRows)}
               type="button"
             >
-              تنزيل CSV
+              تنزيل Excel
             </button>
             <Link className="idv-button idv-button-light idv-button-small text-sm" href="/">
               رجوع
