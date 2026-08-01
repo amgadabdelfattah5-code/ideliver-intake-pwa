@@ -9,6 +9,11 @@ interface AdminOrder {
   customerName: string;
   merchantName: string;
   merchantIdentityLabel?: string;
+  collectedPrice: string;
+  collectedShippingFee: string;
+  collectedTotal: string;
+  productPriceRecipient: string;
+  shippingFeeRecipient: string;
   paymentRef: string | null;
 }
 
@@ -35,6 +40,11 @@ interface AdminRow {
   printedPrice: string;
   printedShippingFee: string;
   printedTotal: string;
+  collectedPrice: string;
+  collectedShippingFee: string;
+  collectedTotal: string;
+  productPriceRecipient: string;
+  shippingFeeRecipient: string;
   notes: string;
   paymentRef: string;
 }
@@ -49,6 +59,8 @@ interface AdminFilters {
   printedPrice: string;
   printedShippingFee: string;
   printedTotal: string;
+  productPriceRecipient: string;
+  shippingFeeRecipient: string;
   currentStatus: string;
   notes: string;
   paymentRef: string;
@@ -57,7 +69,7 @@ interface AdminFilters {
 const PER_PAGE = 50;
 
 const columnWidths = [
-  '3%', '5%', '10%', '9%', '7%', '13%', '9%', '7%', '7%', '7%', '8%', '8%', '7%',
+  '3%', '4%', '8%', '7%', '6%', '15%', '7%', '6%', '6%', '6%', '7%', '7%', '7%', '6%', '5%',
 ];
 
 const statusLabels: Record<string, string> = {
@@ -84,6 +96,12 @@ const statusLabels: Record<string, string> = {
   'returned-partial': 'مرتجع جزئي',
 };
 
+const recipientLabels: Record<string, string> = {
+  us_cash: 'محصّل — لنا',
+  merchant_transfer: 'تحويل — للتاجر',
+  not_paid: 'لم يُدفع',
+};
+
 const initialFilters: AdminFilters = {
   tracking: '',
   merchantName: '',
@@ -94,6 +112,8 @@ const initialFilters: AdminFilters = {
   printedPrice: '',
   printedShippingFee: '',
   printedTotal: '',
+  productPriceRecipient: '',
+  shippingFeeRecipient: '',
   currentStatus: '',
   notes: '',
   paymentRef: '',
@@ -121,6 +141,11 @@ function exportRowsToCSV(rows: AdminRow[]) {
     'سعر المنتج',
     'مصاريف الشحن',
     'الإجمالي',
+    'سعر المنتج المحصّل',
+    'مصاريف الشحن المحصّلة',
+    'الإجمالي المحصّل',
+    'مستلم المنتج',
+    'مستلم الشحن',
     'الحالة',
     'ملاحظات',
     'مرجع الدفع',
@@ -138,6 +163,11 @@ function exportRowsToCSV(rows: AdminRow[]) {
         row.printedPrice,
         row.printedShippingFee,
         row.printedTotal,
+        row.collectedPrice,
+        row.collectedShippingFee,
+        row.collectedTotal,
+        recipientLabels[row.productPriceRecipient] || '—',
+        recipientLabels[row.shippingFeeRecipient] || '—',
         statusLabel(row.currentStatus),
         row.notes,
         row.paymentRef,
@@ -252,6 +282,11 @@ export default function AdminOrdersPage() {
             printedPrice: '',
             printedShippingFee: '',
             printedTotal: '',
+            collectedPrice: order.collectedPrice || '',
+            collectedShippingFee: order.collectedShippingFee || '',
+            collectedTotal: order.collectedTotal || '',
+            productPriceRecipient: order.productPriceRecipient || '',
+            shippingFeeRecipient: order.shippingFeeRecipient || '',
             notes: '',
             paymentRef: order.paymentRef || '',
           }))
@@ -296,6 +331,12 @@ export default function AdminOrdersPage() {
           .toLocaleLowerCase()
           .includes(normalizedFilters.printedShippingFee) &&
         row.printedTotal.toLocaleLowerCase().includes(normalizedFilters.printedTotal) &&
+        row.productPriceRecipient
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.productPriceRecipient) &&
+        row.shippingFeeRecipient
+          .toLocaleLowerCase()
+          .includes(normalizedFilters.shippingFeeRecipient) &&
         row.currentStatus.toLocaleLowerCase().includes(normalizedFilters.currentStatus) &&
         row.notes.toLocaleLowerCase().includes(normalizedFilters.notes) &&
         row.paymentRef.toLocaleLowerCase().includes(normalizedFilters.paymentRef)
@@ -319,6 +360,8 @@ export default function AdminOrdersPage() {
       printedPrice: distinct((row) => row.printedPrice),
       printedShippingFee: distinct((row) => row.printedShippingFee),
       printedTotal: distinct((row) => row.printedTotal),
+      productPriceRecipient: distinct((row) => row.productPriceRecipient),
+      shippingFeeRecipient: distinct((row) => row.shippingFeeRecipient),
       currentStatus: distinct((row) => row.currentStatus),
       notes: distinct((row) => row.notes),
       paymentRef: distinct((row) => row.paymentRef),
