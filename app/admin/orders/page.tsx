@@ -54,8 +54,10 @@ interface AdminFilters {
   paymentRef: string;
 }
 
+const PER_PAGE = 50;
+
 const columnWidths = [
-  '6%', '11%', '9%', '7%', '14%', '9%', '7%', '7%', '7%', '8%', '8%', '7%',
+  '3%', '5%', '10%', '9%', '7%', '13%', '9%', '7%', '7%', '7%', '8%', '8%', '7%',
 ];
 
 const statusLabels: Record<string, string> = {
@@ -157,6 +159,7 @@ function exportRowsToCSV(rows: AdminRow[]) {
 export default function AdminOrdersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [filters, setFilters] = useState<AdminFilters>(initialFilters);
   const [accessState, setAccessState] =
@@ -232,6 +235,7 @@ export default function AdminOrdersPage() {
         if (cancelled) return;
         const orders = (ordersData.orders || []) as AdminOrder[];
         setTotalPages(Math.max(1, Number(ordersData.pages) || 1));
+        setTotal(Number(ordersData.total) || 0);
         setRows(
           orders.map((order) => ({
             orderId: order.orderId,
@@ -423,6 +427,7 @@ export default function AdminOrdersPage() {
                 </colgroup>
                 <tbody>
                   <tr className="align-middle">
+                    <th className="p-1" />
                     {renderFilterCell('tracking', 'رقم الطلب')}
                     {renderFilterCell('merchantName', 'التاجر')}
                     {renderFilterCell('customerName', 'المستلم')}
@@ -449,6 +454,7 @@ export default function AdminOrdersPage() {
                 </colgroup>
                 <thead className="bg-slate-100 text-[#17365F]">
                   <tr className="align-top">
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">م</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">رقم الطلب</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">التاجر</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">المستلم</th>
@@ -464,8 +470,9 @@ export default function AdminOrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {visibleRows.map((row) => (
+                  {visibleRows.map((row, index) => (
                     <tr className="align-top" key={row.orderId}>
+                      <td className="overflow-hidden truncate p-1 text-slate-500">{(page - 1) * PER_PAGE + index + 1}</td>
                       <td className="overflow-hidden truncate p-1 font-bold text-slate-800" title={row.tracking || undefined}>{row.tracking || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantIdentityLabel || undefined}>{row.merchantIdentityLabel || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.customerName || undefined}>{row.customerName || '—'}</td>
@@ -505,7 +512,9 @@ export default function AdminOrdersPage() {
               >
                 ← السابق
               </button>
-              <p className="text-sm font-semibold">صفحة {page} من {totalPages}</p>
+              <p className="text-sm font-semibold">
+                {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, total)} من {total}
+              </p>
               <button
                 className="idv-button idv-button-light idv-button-small text-sm"
                 disabled={page === totalPages}
