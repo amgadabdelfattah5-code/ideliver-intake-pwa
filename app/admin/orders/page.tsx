@@ -496,6 +496,8 @@ export default function AdminOrdersPage() {
                     {renderFilterCell('printedPrice', 'سعر المنتج')}
                     {renderFilterCell('printedShippingFee', 'مصاريف الشحن')}
                     {renderFilterCell('printedTotal', 'الإجمالي')}
+                    {renderFilterCell('productPriceRecipient', 'مستلم المنتج', (value) => recipientLabels[value])}
+                    {renderFilterCell('shippingFeeRecipient', 'مستلم الشحن', (value) => recipientLabels[value])}
                     {renderFilterCell('currentStatus', 'الحالة', statusLabel)}
                     {renderFilterCell('notes', 'ملاحظات')}
                     {renderFilterCell('paymentRef', 'مرجع الدفع')}
@@ -523,6 +525,8 @@ export default function AdminOrdersPage() {
                     <th className="break-words border-b border-slate-200 p-1 font-bold">سعر المنتج</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">مصاريف الشحن</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">الإجمالي</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">مستلم المنتج</th>
+                    <th className="break-words border-b border-slate-200 p-1 font-bold">مستلم الشحن</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">الحالة</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">ملاحظات</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">مرجع الدفع</th>
@@ -538,9 +542,45 @@ export default function AdminOrdersPage() {
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientGovernorate || undefined}>{row.recipientGovernorate || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
                       <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700" title={row.recipientAddress || undefined}>{row.recipientAddress || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientPhone || undefined}>{row.recipientPhone || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
-                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.printedPrice || undefined}>{row.printedPrice || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
-                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.printedShippingFee || undefined}>{row.printedShippingFee || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
-                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.printedTotal || undefined}>{row.printedTotal || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={(row.collectedPrice || row.printedPrice) || undefined}>
+                        {row.collectedPrice ? (
+                          <span className="rounded bg-green-50 px-1 text-green-700">{row.collectedPrice}</span>
+                        ) : (
+                          row.printedPrice || (dataEntriesLoadState === 'loading' ? '…' : '—')
+                        )}
+                      </td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={(row.collectedShippingFee || row.printedShippingFee) || undefined}>
+                        {row.collectedShippingFee ? (
+                          <span className="rounded bg-green-50 px-1 text-green-700">{row.collectedShippingFee}</span>
+                        ) : (
+                          row.printedShippingFee || (dataEntriesLoadState === 'loading' ? '…' : '—')
+                        )}
+                      </td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={(row.collectedTotal || row.printedTotal) || undefined}>
+                        {row.collectedTotal ? (
+                          <span className="rounded bg-green-50 px-1 text-green-700">{row.collectedTotal}</span>
+                        ) : (
+                          row.printedTotal || (dataEntriesLoadState === 'loading' ? '…' : '—')
+                        )}
+                      </td>
+                      <td className="overflow-hidden truncate p-1 font-semibold">
+                        {row.productPriceRecipient ? (
+                          <span className="rounded bg-slate-100 px-1 text-slate-700">
+                            {recipientLabels[row.productPriceRecipient] || '—'}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="overflow-hidden truncate p-1 font-semibold">
+                        {row.shippingFeeRecipient ? (
+                          <span className="rounded bg-slate-100 px-1 text-slate-700">
+                            {recipientLabels[row.shippingFeeRecipient] || '—'}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={statusLabel(row.currentStatus)}>{statusLabel(row.currentStatus) || '—'}</td>
                       <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700" title={row.notes || undefined}>{row.notes || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
                       <td className="overflow-hidden p-1 font-semibold">
