@@ -513,7 +513,7 @@ export default function AdminOrdersPage() {
                 ← السابق
               </button>
               <p className="text-sm font-semibold">
-                {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, total)} من {total}
+                {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, total)} من {total} &nbsp;|&nbsp; صفحة {page} من {totalPages}
               </p>
               <button
                 className="idv-button idv-button-light idv-button-small text-sm"
