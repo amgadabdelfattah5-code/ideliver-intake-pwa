@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface AdminOrder {
   orderId: number;
@@ -124,10 +124,21 @@ function statusLabel(value: string): string {
   return statusLabels[value] ?? value;
 }
 
-function exportRowsToXLSX(rows: AdminRow[]) {
-  const data = [
-    ['رقم الطلب', 'التاجر', 'المستلم', 'المحافظة', 'العنوان', 'رقم الهاتف', 'سعر المنتج', 'مصاريف الشحن', 'الإجمالي', 'سعر المنتج المحصّل', 'مصاريف الشحن المحصّلة', 'الإجمالي المحصّل', 'مستلم المنتج', 'مستلم الشحن', 'الحالة', 'ملاحظات', 'مرجع الدفع'],
-    ...rows.map((row) => [
+async function exportRowsToXLSX(rows: AdminRow[]) {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('الطلبات', {
+    views: [{ rightToLeft: true, state: 'frozen', ySplit: 1 }],
+  });
+
+  ws.addRow(['رقم الطلب', 'التاجر', 'المستلم', 'المحافظة', 'العنوان', 'رقم الهاتف', 'سعر المنتج', 'مصاريف الشحن', 'الإجمالي', 'سعر المنتج المحصّل', 'مصاريف الشحن المحصّلة', 'الإجمالي المحصّل', 'مستلم المنتج', 'مستلم الشحن', 'الحالة', 'ملاحظات', 'مرجع الدفع']);
+  ws.getRow(1).eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF17365F' } };
+    cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+    cell.alignment = { horizontal: 'right' };
+  });
+
+  rows.forEach((row) => {
+    ws.addRow([
       row.orderId,
       row.merchantIdentityLabel || row.merchantName,
       row.customerName,
@@ -145,13 +156,16 @@ function exportRowsToXLSX(rows: AdminRow[]) {
       statusLabel(row.currentStatus),
       row.notes,
       row.paymentRef,
-    ]),
-  ];
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  wb.Workbook = { Views: [{ RTL: true }] };
-  XLSX.utils.book_append_sheet(wb, ws, 'الطلبات');
-  XLSX.writeFile(wb, 'admin-orders-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+    ]);
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'admin-orders-' + new Date().toISOString().slice(0, 10) + '.xlsx';
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function AdminOrdersPage() {
@@ -416,7 +430,7 @@ export default function AdminOrdersPage() {
               disabled={
                 loading || dataEntriesLoadState === 'loading' || visibleRows.length === 0
               }
-              onClick={() => exportRowsToXLSX(visibleRows)}
+              onClick={() => void exportRowsToXLSX(visibleRows)}
               type="button"
             >
               تنزيل Excel
