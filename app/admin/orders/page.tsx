@@ -70,7 +70,7 @@ interface AdminFilters {
 const PER_PAGE = 50;
 
 const columnWidths = [
-  '2%', '4%', '8%', '7%', '5%', '12%', '7%', '6%', '6%', '6%', '8%', '8%', '8%', '5%', '8%',
+  '2%', '2%', '4%', '8%', '7%', '5%', '10%', '7%', '6%', '6%', '6%', '8%', '8%', '8%', '5%', '8%',
 ];
 
 const statusLabels: Record<string, string> = {
@@ -174,6 +174,7 @@ export default function AdminOrdersPage() {
   const [total, setTotal] = useState(0);
   const [pageInput, setPageInput] = useState('1');
   const [serialInput, setSerialInput] = useState('1');
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [filters, setFilters] = useState<AdminFilters>(initialFilters);
   const [accessState, setAccessState] =
@@ -386,10 +387,42 @@ export default function AdminOrdersPage() {
     setError('');
     setDataEntriesLoadState('idle');
     setFilters(initialFilters);
+    setSelectedIds(new Set());
     setPage(nextPage);
     setPageInput(String(nextPage));
     setSerialInput(String((nextPage - 1) * PER_PAGE + 1));
   }
+
+  const allVisibleSelected =
+    visibleRows.length > 0 && visibleRows.every((r) => selectedIds.has(r.orderId));
+
+  function toggleAll() {
+    if (allVisibleSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        visibleRows.forEach((r) => next.delete(r.orderId));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        visibleRows.forEach((r) => next.add(r.orderId));
+        return next;
+      });
+    }
+  }
+
+  function toggleRow(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const exportRows =
+    selectedIds.size > 0 ? visibleRows.filter((r) => selectedIds.has(r.orderId)) : visibleRows;
 
   function handlePageInput(value: string) {
     const n = parseInt(value, 10);
@@ -430,10 +463,10 @@ export default function AdminOrdersPage() {
               disabled={
                 loading || dataEntriesLoadState === 'loading' || visibleRows.length === 0
               }
-              onClick={() => void exportRowsToXLSX(visibleRows)}
+              onClick={() => void exportRowsToXLSX(exportRows)}
               type="button"
             >
-              تنزيل Excel
+              تنزيل Excel{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
             </button>
             <Link className="idv-button idv-button-light idv-button-small text-sm" href="/">
               رجوع
@@ -468,6 +501,15 @@ export default function AdminOrdersPage() {
                 </colgroup>
                 <tbody>
                   <tr className="align-middle">
+                    <th className="p-1 text-center">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        onChange={toggleAll}
+                        aria-label="تحديد الكل"
+                        className="cursor-pointer accent-[#17365F]"
+                      />
+                    </th>
                     <th className="p-1" />
                     {renderFilterCell('tracking', 'رقم الطلب')}
                     {renderFilterCell('merchantName', 'التاجر')}
@@ -497,6 +539,15 @@ export default function AdminOrdersPage() {
                 </colgroup>
                 <thead className="bg-slate-100 text-[#17365F]">
                   <tr className="align-top">
+                    <th className="border-b border-slate-200 p-1 text-center">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        onChange={toggleAll}
+                        aria-label="تحديد الكل"
+                        className="cursor-pointer accent-[#17365F]"
+                      />
+                    </th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">م</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">رقم الطلب</th>
                     <th className="break-words border-b border-slate-200 p-1 font-bold">التاجر</th>
@@ -516,7 +567,16 @@ export default function AdminOrdersPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {visibleRows.map((row, index) => (
-                    <tr className="align-middle" key={row.orderId}>
+                    <tr className={`align-middle${selectedIds.has(row.orderId) ? ' bg-blue-50' : ''}`} key={row.orderId}>
+                      <td className="p-1 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(row.orderId)}
+                          onChange={() => toggleRow(row.orderId)}
+                          aria-label={`تحديد طلب ${row.orderId}`}
+                          className="cursor-pointer accent-[#17365F]"
+                        />
+                      </td>
                       <td className="overflow-hidden truncate p-1 text-slate-500">{(page - 1) * PER_PAGE + index + 1}</td>
                       <td className="overflow-hidden truncate p-1 font-bold text-slate-800" title={row.tracking || undefined}>{row.tracking || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantName || undefined}>{row.merchantName || '—'}</td>
