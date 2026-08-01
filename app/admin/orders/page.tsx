@@ -69,7 +69,7 @@ interface AdminFilters {
 const PER_PAGE = 50;
 
 const columnWidths = [
-  '3%', '4%', '8%', '7%', '6%', '15%', '7%', '6%', '6%', '6%', '7%', '7%', '7%', '6%', '5%',
+  '2%', '4%', '8%', '7%', '5%', '12%', '7%', '6%', '6%', '6%', '8%', '8%', '8%', '5%', '8%',
 ];
 
 const statusLabels: Record<string, string> = {
@@ -534,13 +534,13 @@ export default function AdminOrdersPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {visibleRows.map((row, index) => (
-                    <tr className="align-top" key={row.orderId}>
+                    <tr className="align-middle" key={row.orderId}>
                       <td className="overflow-hidden truncate p-1 text-slate-500">{(page - 1) * PER_PAGE + index + 1}</td>
                       <td className="overflow-hidden truncate p-1 font-bold text-slate-800" title={row.tracking || undefined}>{row.tracking || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantName || undefined}>{row.merchantName || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.customerName || undefined}>{row.customerName || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientGovernorate || undefined}>{row.recipientGovernorate || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
-                      <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700" title={row.recipientAddress || undefined}>{row.recipientAddress || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientAddress || undefined}>{row.recipientAddress || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientPhone || undefined}>{row.recipientPhone || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={(row.collectedPrice || row.printedPrice) || undefined}>
                         {row.collectedPrice ? (
@@ -582,7 +582,7 @@ export default function AdminOrdersPage() {
                         )}
                       </td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={statusLabel(row.currentStatus)}>{statusLabel(row.currentStatus) || '—'}</td>
-                      <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700" title={row.notes || undefined}>{row.notes || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.notes || undefined}>{row.notes || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
                       <td className="overflow-hidden p-1 font-semibold">
                         {row.paymentRef ? (
                           <span className="rounded bg-green-50 px-1 text-green-700" title={row.paymentRef}>{row.paymentRef}</span>
