@@ -474,7 +474,7 @@ export default function AdminOrdersPage() {
                     <tr className="align-top" key={row.orderId}>
                       <td className="overflow-hidden truncate p-1 text-slate-500">{(page - 1) * PER_PAGE + index + 1}</td>
                       <td className="overflow-hidden truncate p-1 font-bold text-slate-800" title={row.tracking || undefined}>{row.tracking || '—'}</td>
-                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantIdentityLabel || undefined}>{row.merchantIdentityLabel || '—'}</td>
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantName || undefined}>{row.merchantName || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.customerName || undefined}>{row.customerName || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientGovernorate || undefined}>{row.recipientGovernorate || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
                       <td className="overflow-hidden whitespace-pre-wrap break-words p-1 font-semibold text-slate-700" title={row.recipientAddress || undefined}>{row.recipientAddress || (dataEntriesLoadState === 'loading' ? '…' : '—')}</td>
