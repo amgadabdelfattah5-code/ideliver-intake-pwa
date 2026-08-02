@@ -268,3 +268,70 @@ export interface WALog {
   status: 'success' | 'failed';
   api_response: string;
 }
+
+export interface MerchantRequest {
+  id: number;
+  date: string;
+  full_name: string;
+  company_name: string;
+  whatsapp_phone: string;
+  governorate: string;
+  area: string;
+  pickup_address: string;
+  product_nature: string;
+  payment_method: string;
+  social_link: string;
+  extra_phone: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_user_id: number;
+}
+
+export async function getMerchantRequests(params?: { status?: string; page?: number; per_page?: number }) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const qs   = new URLSearchParams(params as Record<string, string>).toString();
+  const res  = await fetch(`${getLiquidShipBase()}/merchant-requests${qs ? '?' + qs : ''}`, {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json() as Promise<{ requests: MerchantRequest[]; total: number; pages: number }>;
+}
+
+export async function approveRequest(id: number) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res  = await fetch(`${getLiquidShipBase()}/merchant-requests/${id}/approve`, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err.message || `WP API error: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function rejectRequest(id: number) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res  = await fetch(`${getLiquidShipBase()}/merchant-requests/${id}/reject`, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err.message || `WP API error: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function addMerchantDirect(data: Record<string, string>) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res  = await fetch(`${getLiquidShipBase()}/merchants/add`, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err.message || `WP API error: ${res.status}`);
+  }
+  return res.json();
+}

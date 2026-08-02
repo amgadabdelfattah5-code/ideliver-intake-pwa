@@ -328,6 +328,19 @@ export default function Home() {
             </Link>
           </div>
         )}
+
+        {user.role === 'admin' && (
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">إدارة التجار</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">Merchants</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              اعرض التجار وطلبات الانضمام، ووافق أو ارفض الطلبات، وأضف تاجراً جديداً.
+            </p>
+            <Link className="idv-button idv-button-orange mt-5 h-10 text-sm" href="/merchants">
+              🏪 فتح إدارة التجار
+            </Link>
+          </div>
+        )}
         {(user.role === 'admin' || user.role === 'data_entry' || user.role === 'driver') && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">تدفّق التوصيل</p>

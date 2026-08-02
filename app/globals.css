@@ -108,6 +108,11 @@ input:-webkit-autofill:focus {
   --idv-shadow: rgba(151, 64, 14, 0.45);
 }
 
+.idv-button-danger {
+  --idv-bg: #b91c1c;
+  --idv-shadow: rgba(127, 29, 29, 0.45);
+}
+
 .idv-button-light {
   --idv-bg: #ffffff;
   --idv-fg: #17365f;
