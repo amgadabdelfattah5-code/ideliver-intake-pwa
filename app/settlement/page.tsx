@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-interface StaffUser { wpUserId: number; username: string; email: string; role: string; }
+interface StaffUser { wpUserId: number; username: string; email: string; role: string; isAdmin: boolean; permissions: string[]; }
 interface Merchant { wpUserId: number; name: string; merchantId: string; identityLabel?: string; }
 interface EligibleOrder {
   order_id: number; order_status: string;
@@ -200,7 +200,7 @@ export default function SettlementPage() {
   }
 
   if (!user) return <div className="p-8 text-center text-[#17365F]">جاري التحميل...</div>;
-  if (user.role !== 'admin') return <div className="p-8 text-center text-red-600">غير مصرح</div>;
+  if (!user.isAdmin && !user.permissions.includes('settlement')) return <div className="p-8 text-center text-red-600">غير مصرح</div>;
 
   const netEgp = totals && balance ? ((totals.lines_net + balance.carry_balance) / 100).toFixed(2) : null;
   const openStatus = balance?.open_payout_status ?? null;

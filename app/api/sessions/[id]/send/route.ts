@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/auth';
+import { requireAnyPermission } from '@/lib/auth';
 import { runSessionExtraction } from '@/lib/extraction-provider';
 import { prisma } from '@/lib/prisma';
 import { SessionStatus } from '@prisma/client';
@@ -9,7 +9,7 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await requireRole(['admin', 'pickup']);
+  const session = await requireAnyPermission(['capture', 'review', 'print']);
   if (session instanceof NextResponse) return session;
 
   const { id } = await params;

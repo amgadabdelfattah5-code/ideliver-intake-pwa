@@ -265,8 +265,7 @@ export default function DriverBulkPage() {
         const authData = await authResponse.json();
         if (!authResponse.ok) throw new Error('تعذّر التحقق من الحساب');
 
-        const role = authData.user?.role;
-        if (role !== 'admin' && role !== 'data_entry') {
+        if (!authData.user?.isAdmin && !authData.user?.permissions?.includes('driver')) {
           if (!cancelled) setAccessState('forbidden');
           return;
         }

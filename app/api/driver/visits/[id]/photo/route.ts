@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { readStoredPhoto } from '@/lib/photo-storage';
 import { prisma } from '@/lib/prisma';
 
@@ -11,9 +11,9 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // requireRole, not requireAuth — these are doorstep/delivery photos, not shared
+  // Permission guard: these are doorstep/delivery photos, not shared
   // merchant-intake receipts, so a driver should only ever see their own visit photos.
-  const session = await requireRole(['admin', 'data_entry', 'driver']);
+  const session = await requirePermission('driver');
   if (session instanceof NextResponse) return session;
 
   const { id } = await params;

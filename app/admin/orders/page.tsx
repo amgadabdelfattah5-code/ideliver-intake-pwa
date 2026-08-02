@@ -233,7 +233,7 @@ export default function AdminOrdersPage() {
         const authData = await authResponse.json();
         if (!authResponse.ok) throw new Error('تعذّر التحقق من الحساب');
 
-        if (authData.user?.role !== 'admin') {
+        if (!authData.user?.isAdmin && !authData.user?.permissions?.includes('orders')) {
           if (!cancelled) setAccessState('forbidden');
           return;
         }

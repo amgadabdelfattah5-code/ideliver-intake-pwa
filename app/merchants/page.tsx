@@ -27,7 +27,7 @@ export default function MerchantsPage() {
   const [selected, setSelected] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/api/auth/me').then((res) => res.json()).then((data) => setState(data.user?.role === 'admin' ? 'ready' : 'forbidden')).catch(() => setState('forbidden'));
+    fetch('/api/auth/me').then((res) => res.json()).then((data) => setState(data.user?.isAdmin || data.user?.permissions?.includes('merchants') ? 'ready' : 'forbidden')).catch(() => setState('forbidden'));
   }, []);
 
   useEffect(() => {

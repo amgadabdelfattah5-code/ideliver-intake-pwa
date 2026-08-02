@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { storePhoto } from '@/lib/photo-storage';
 import { prisma } from '@/lib/prisma';
 import { getDriverOrders, submitDeliveryVisit } from '@/lib/wp-client';
@@ -156,7 +156,7 @@ function parseLocationUrlOrUndefined(value: unknown): string | undefined {
 const maxRequestBytes = 12 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
-  const session = await requireRole(['admin', 'data_entry', 'driver']);
+  const session = await requirePermission('driver');
   if (session instanceof NextResponse) return session;
 
   // Require Content-Length rather than only checking it when present — Number(null) is 0,

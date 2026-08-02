@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { runSessionExtraction } from '@/lib/extraction-provider';
 
 // POST /api/test/extract-stub?sessionId= — stub Hermes extraction (for slice testing)
 export async function POST(req: NextRequest) {
-  const session = await requireRole(['admin']);
+  const session = await requirePermission('orders');
   if (session instanceof NextResponse) return session;
 
   const { searchParams } = new URL(req.url);

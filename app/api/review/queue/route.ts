@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { OrderStatus, SessionStatus } from '@prisma/client';
 
@@ -7,7 +7,7 @@ import { OrderStatus, SessionStatus } from '@prisma/client';
 // orderCount reflects only orders still pending review (excludes submitted / awaiting_merchant),
 // so the queue shrinks as data entry submits each shipment.
 export async function GET() {
-  const session = await requireRole(['admin', 'pickup', 'data_entry']);
+  const session = await requirePermission('review');
   if (session instanceof NextResponse) return session;
 
   try {

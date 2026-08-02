@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { postSettlementPayout } from '@/lib/wp-client';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
-  const session = await requireRole(['admin']);
+  const session = await requirePermission('settlement');
   if (session instanceof NextResponse) return session;
   const body = await req.json();
   try {

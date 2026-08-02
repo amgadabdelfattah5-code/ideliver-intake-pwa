@@ -1,6 +1,5 @@
-import { pbkdf2Sync, timingSafeEqual } from 'crypto';
-
 import type { StaffRole } from './auth';
+import { verifyPassword } from './crypto';
 
 interface LocalPwaAccount {
   username: string;
@@ -11,10 +10,6 @@ interface LocalPwaAccount {
   salt: string;
   passwordHash: string;
 }
-
-const iterations = 310000;
-const keyLength = 32;
-const digest = 'sha256';
 
 const localAccounts: LocalPwaAccount[] = [
   {
@@ -46,24 +41,23 @@ const localAccounts: LocalPwaAccount[] = [
   },
 ];
 
-function verifyPassword(password: string, account: LocalPwaAccount): boolean {
-  const actual = pbkdf2Sync(password, account.salt, iterations, keyLength, digest);
-  const expected = Buffer.from(account.passwordHash, 'hex');
-
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
-}
-
-export function verifyLocalPwaAccount(username: string, password: string) {
+export async function verifyLocalPwaAccount(username: string, password: string) {
   const normalizedUsername = username.trim().toLowerCase();
   const account = localAccounts.find((item) => item.username === normalizedUsername);
 
-  if (!account || !verifyPassword(password, account)) return null;
+  if (!account || !await verifyPassword(password, account.passwordHash, account.salt)) return null;
 
   return {
     wpUserId: account.wpUserId,
     username: account.displayName,
     email: account.email,
     role: account.role,
+    isAdmin: account.role === 'admin',
+    permissions: account.role === 'driver'
+      ? ['driver']
+      : account.role === 'admin'
+        ? []
+        : ['capture', 'review', 'print'],
     authProvider: 'local' as const,
   };
 }

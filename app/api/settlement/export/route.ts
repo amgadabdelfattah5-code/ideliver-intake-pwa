@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { fetchSettlementExport } from '@/lib/wp-client';
 
 export async function GET(req: NextRequest) {
-  const session = await requireRole(['admin']);
+  const session = await requirePermission('settlement');
   if (session instanceof NextResponse) return session;
   const merchantId = Number(req.nextUrl.searchParams.get('merchant_id'));
   const type = (req.nextUrl.searchParams.get('type') ?? 'main') as 'main' | 'review';

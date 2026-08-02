@@ -7,7 +7,9 @@ interface StaffUser {
   wpUserId: number;
   username: string;
   email: string;
-  role: 'admin' | 'pickup' | 'data_entry' | 'driver';
+  role: 'admin' | 'pickup' | 'data_entry' | 'driver' | 'staff';
+  isAdmin: boolean;
+  permissions: string[];
 }
 
 const REMEMBER_STORAGE_KEY = 'idv_remember';
@@ -67,6 +69,8 @@ export default function Home() {
         username: data.user.username,
         email: data.user.email,
         role: data.user.role,
+        isAdmin: data.user.isAdmin,
+        permissions: data.user.permissions,
       });
       setPassword('');
     } finally {
@@ -236,7 +240,7 @@ export default function Home() {
       </header>
 
       <section className="mx-auto grid max-w-6xl gap-4 px-4 py-6 md:grid-cols-[1fr_1fr_1fr]">
-        {(user.role === 'admin' || user.role === 'pickup') && (
+        {(user.isAdmin || user.permissions.includes('capture')) && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">تدفّق الهاتف</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">تصوير إيصالات الاستلام</h2>
@@ -252,7 +256,7 @@ export default function Home() {
           </div>
         )}
 
-        {(user.role === 'admin' || user.role === 'pickup' || user.role === 'data_entry') && (
+        {(user.isAdmin || user.permissions.includes('review')) && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">تدفّق المراجعة</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">قائمة المراجعة</h2>
@@ -268,7 +272,7 @@ export default function Home() {
           </div>
         )}
 
-        {(user.role === 'admin' || user.role === 'pickup' || user.role === 'data_entry') && (
+        {(user.isAdmin || user.permissions.includes('print')) && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">تدفّق الطباعة</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">قائمة الطباعة</h2>
@@ -284,7 +288,7 @@ export default function Home() {
           </div>
         )}
 
-        {user.role === 'admin' && (
+        {(user.isAdmin || user.permissions.includes('orders')) && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">إدارة الطلبات</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">كل الطلبات</h2>
@@ -300,7 +304,7 @@ export default function Home() {
           </div>
         )}
 
-        {user.role === 'admin' && (
+        {(user.isAdmin || user.permissions.includes('settlement')) && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">التسوية المالية</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">تسوية حساب التاجر</h2>
@@ -316,7 +320,7 @@ export default function Home() {
           </div>
         )}
 
-        {user.role === 'admin' && (
+        {(user.isAdmin || user.permissions.includes('whatsapp')) && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">إدارة واتساب</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">WhatsApp</h2>
@@ -329,7 +333,7 @@ export default function Home() {
           </div>
         )}
 
-        {user.role === 'admin' && (
+        {(user.isAdmin || user.permissions.includes('merchants')) && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">إدارة التجار</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">Merchants</h2>
@@ -341,7 +345,20 @@ export default function Home() {
             </Link>
           </div>
         )}
-        {(user.role === 'admin' || user.role === 'data_entry' || user.role === 'driver') && (
+        {user.isAdmin && (
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">إدارة النظام</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">إدارة الحسابات</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              أضف حسابات الموظفين وحدد صلاحيات الوصول لكل حساب.
+            </p>
+            <Link className="idv-button idv-button-orange mt-5 h-10 text-sm" href="/admin/accounts">
+              إدارة الحسابات
+            </Link>
+          </div>
+        )}
+
+        {(user.isAdmin || user.permissions.includes('driver')) && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">تدفّق التوصيل</p>
             <h2 className="mt-1 text-lg font-bold text-[#17365F]">زيارات المندوبين</h2>

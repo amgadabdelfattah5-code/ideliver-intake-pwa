@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderStatus } from '@prisma/client';
 
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/print/queue → submitted orders still pending print, grouped by merchant.
 // Mirrors /api/review/queue but for OrderStatus.submitted && printQueueRemovedAt IS NULL.
 // With ?merchantId=<local Merchant.id> → flat list of that merchant's pending-print orders.
 export async function GET(req: NextRequest) {
-  const session = await requireRole(['admin', 'pickup', 'data_entry']);
+  const session = await requirePermission('print');
   if (session instanceof NextResponse) return session;
 
   const merchantId = req.nextUrl.searchParams.get('merchantId')?.trim() || '';
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
 // Non-destructive: sets printQueueRemovedAt; never deletes the order.
 // Body: { orderIds: string[] }
 export async function POST(req: NextRequest) {
-  const session = await requireRole(['admin', 'pickup', 'data_entry']);
+  const session = await requirePermission('print');
   if (session instanceof NextResponse) return session;
 
   try {

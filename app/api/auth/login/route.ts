@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 import { createSessionToken, staffSessionCookieName, staffSessionMaxAgeSeconds } from '@/lib/session';
-import { verifyLocalPwaAccount } from '@/lib/local-pwa-accounts';
+import { verifyPassword } from '@/lib/crypto';
+import { prisma } from '@/lib/prisma';
 import { getWpJsonBase } from '@/lib/wp-client';
 import { clearLoginAttempts, isLoginRateLimited, recordFailedLogin } from '@/lib/login-rate-limit';
 
@@ -28,10 +29,24 @@ export async function POST(req: Request) {
       );
     }
 
-    const localAccount = verifyLocalPwaAccount(username, password);
-    if (localAccount) {
+    const staffAccount = await prisma.staffAccount.findUnique({ where: { username } });
+    if (staffAccount) {
+      if (!(await verifyPassword(password, staffAccount.passwordHash, staffAccount.salt))) {
+        recordFailedLogin(ip, username);
+        return NextResponse.json({ error: 'بيانات الدخول غير صحيحة' }, { status: 401 });
+      }
+
       clearLoginAttempts(ip, username);
-      const token = createSessionToken(localAccount);
+      const accountSession = {
+        wpUserId: -1,
+        username: staffAccount.username,
+        email: staffAccount.username + '@ideliver.local',
+        role: staffAccount.isAdmin ? 'admin' as const : 'staff' as const,
+        isAdmin: staffAccount.isAdmin,
+        permissions: staffAccount.permissions,
+        authProvider: 'local' as const,
+      };
+      const token = createSessionToken(accountSession);
       const cookieStore = await cookies();
 
       cookieStore.set(staffSessionCookieName, token, {
@@ -45,10 +60,12 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         user: {
-          id: localAccount.wpUserId,
-          username: localAccount.username,
-          email: localAccount.email,
-          role: localAccount.role,
+          id: accountSession.wpUserId,
+          username: accountSession.username,
+          email: accountSession.email,
+          role: accountSession.role,
+          isAdmin: accountSession.isAdmin,
+          permissions: accountSession.permissions,
         },
       });
     }
@@ -88,6 +105,8 @@ export async function POST(req: Request) {
       username: displayName,
       email,
       role,
+      isAdmin: role === 'admin',
+      permissions: role === 'admin' ? [] : ['capture', 'review', 'print', 'driver'],
       authProvider: 'wordpress',
     });
 
@@ -102,7 +121,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      user: { id: wpUser.id, username: displayName, email, role },
+      user: {
+        id: wpUser.id,
+        username: displayName,
+        email,
+        role,
+        isAdmin: role === 'admin',
+        permissions: role === 'admin' ? [] : ['capture', 'review', 'print', 'driver'],
+      },
     });
   } catch {
     return NextResponse.json({ error: 'فشل تسجيل الدخول' }, { status: 500 });

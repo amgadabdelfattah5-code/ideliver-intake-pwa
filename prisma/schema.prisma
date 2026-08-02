@@ -8,6 +8,18 @@ datasource db {
   // Connection URL configured in prisma.config.ts.
 }
 
+model StaffAccount {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  salt         String
+  permissions  String[]
+  isAdmin      Boolean  @default(false)
+  isProtected  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 // WP is system of record for merchants; this is a local cache.
 model Merchant {
   id         String    @id @default(cuid())

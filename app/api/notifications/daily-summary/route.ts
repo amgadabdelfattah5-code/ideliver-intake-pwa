@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderStatus } from '@prisma/client';
 
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { evolutionConfigured, sendEvolutionText } from '@/lib/evolution-whatsapp';
 import { prisma } from '@/lib/prisma';
 
@@ -40,7 +40,7 @@ function recipients(): string[] {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await requireRole(['admin']);
+  const session = await requirePermission('whatsapp');
   if (session instanceof NextResponse) return session;
 
   const body = await req.json().catch(() => ({}));

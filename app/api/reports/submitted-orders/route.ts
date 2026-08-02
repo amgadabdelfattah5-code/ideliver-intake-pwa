@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderStatus } from '@prisma/client';
 
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
-  const session = await requireRole(['admin', 'pickup', 'data_entry']);
+  const session = await requirePermission('orders');
   if (session instanceof NextResponse) return session;
 
   const searchParams = req.nextUrl.searchParams;

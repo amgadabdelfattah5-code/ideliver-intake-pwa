@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { getMerchantRequests } from '@/lib/wp-client';
 
 export async function GET(req: NextRequest) {
-  const auth = await requireRole(['admin']);
+  const auth = await requirePermission('merchants');
   if (auth instanceof NextResponse) return auth;
   const { searchParams } = req.nextUrl;
   const status   = searchParams.get('status') ?? 'pending';

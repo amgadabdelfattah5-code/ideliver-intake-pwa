@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderStatus } from '@prisma/client';
 
-import { requireRole } from '@/lib/auth';
+import { requireAnyPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const authSession = await requireRole(['admin', 'data_entry']);
+  const authSession = await requireAnyPermission(['capture', 'review', 'print']);
   if (authSession instanceof NextResponse) return authSession;
 
   const { id: orderId } = await params;

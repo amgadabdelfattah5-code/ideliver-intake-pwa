@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { getDriverOrders } from '@/lib/wp-client';
 
 export async function GET() {
-  const session = await requireRole(['admin', 'data_entry', 'driver']);
+  const session = await requirePermission('driver');
   if (session instanceof NextResponse) return session;
 
   try {

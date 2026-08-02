@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { requireRole } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getDriverOrders } from '@/lib/wp-client';
 
@@ -12,7 +12,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
-  const session = await requireRole(['admin', 'data_entry', 'driver']);
+  const session = await requirePermission('driver');
   if (session instanceof NextResponse) return session;
 
   const { orderId: rawOrderId } = await params;

@@ -50,7 +50,7 @@ export default function WhatsAppPage() {
     Promise.all([fetch('/api/auth/me'), fetch('/api/whatsapp/settings')])
       .then(async ([auth, response]) => {
         const authData = await auth.json();
-        if (authData.user?.role !== 'admin') return setState('forbidden');
+        if (!authData.user?.isAdmin && !authData.user?.permissions?.includes('whatsapp')) return setState('forbidden');
         if (!response.ok) throw new Error();
         setSettings(await response.json());
         setState('ready');

@@ -3,15 +3,19 @@ import { NextResponse } from 'next/server';
 
 import { staffSessionCookieName, verifySessionToken } from './session';
 
-export type StaffRole = 'admin' | 'pickup' | 'data_entry' | 'driver';
+export type StaffRole = 'admin' | 'pickup' | 'data_entry' | 'driver' | 'staff';
 
 export interface StaffSession {
   wpUserId: number;
   username: string;
   email: string;
   role: StaffRole;
+  isAdmin: boolean;
+  permissions: string[];
   authProvider?: 'wordpress' | 'local';
 }
+
+export type SessionData = StaffSession;
 
 // Verify staff session from cookie; returns null if invalid
 export async function getStaffSession(): Promise<StaffSession | null> {
@@ -38,4 +42,20 @@ export async function requireRole(roles: StaffRole[]): Promise<StaffSession | Ne
   }
 
   return session;
+}
+
+export async function requirePermission(slug: string): Promise<StaffSession | NextResponse> {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+  return session.isAdmin || session.permissions.includes(slug)
+    ? session
+    : NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+}
+
+export async function requireAnyPermission(slugs: string[]): Promise<StaffSession | NextResponse> {
+  const session = await requireAuth();
+  if (session instanceof NextResponse) return session;
+  return session.isAdmin || slugs.some((slug) => session.permissions.includes(slug))
+    ? session
+    : NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 }

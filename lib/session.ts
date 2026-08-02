@@ -69,7 +69,9 @@ export function verifySessionToken(token: string | undefined): StaffSession | nu
       !payload.username ||
       !payload.email ||
       !payload.exp ||
-      !payload.role
+      !payload.role ||
+      typeof payload.isAdmin !== 'boolean' ||
+      !Array.isArray(payload.permissions)
     ) {
       return null;
     }
@@ -83,6 +85,8 @@ export function verifySessionToken(token: string | undefined): StaffSession | nu
       username: payload.username,
       email: payload.email,
       role: payload.role,
+      isAdmin: payload.isAdmin,
+      permissions: payload.permissions,
       authProvider: payload.authProvider,
     };
   } catch {

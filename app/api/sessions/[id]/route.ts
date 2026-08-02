@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderStatus } from '@prisma/client';
 
-import { requireRole } from '@/lib/auth';
+import { requireAnyPermission } from '@/lib/auth';
 import { deleteStoredPhoto } from '@/lib/photo-storage';
 import { prisma } from '@/lib/prisma';
 
@@ -11,7 +11,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const authSession = await requireRole(['admin', 'pickup', 'data_entry']);
+  const authSession = await requireAnyPermission(['capture', 'review', 'print']);
   if (authSession instanceof NextResponse) return authSession;
 
   const { id } = await params;

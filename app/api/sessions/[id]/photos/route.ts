@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrderStatus } from '@prisma/client';
 
-import { requireRole } from '@/lib/auth';
+import { requireAnyPermission } from '@/lib/auth';
 import { storePhoto } from '@/lib/photo-storage';
 import { prisma } from '@/lib/prisma';
 
@@ -86,7 +86,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await requireRole(['admin', 'pickup']);
+  const session = await requireAnyPermission(['capture', 'review', 'print']);
   if (session instanceof NextResponse) return session;
 
   const { id } = await params;
