@@ -23,6 +23,8 @@ export default function MerchantsPage() {
   const [pages, setPages] = useState(1);
   const [busy, setBusy] = useState<number | 'add' | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [reqSearch, setReqSearch] = useState('');
+  const [selected, setSelected] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me').then((res) => res.json()).then((data) => setState(data.user?.role === 'admin' ? 'ready' : 'forbidden')).catch(() => setState('forbidden'));
@@ -84,8 +86,30 @@ export default function MerchantsPage() {
       </div>}
 
       {tab === 'requests' && <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <select className={`${inputClass} max-w-52`} value={requestStatus} onChange={(e) => { setRequestStatus(e.target.value); setPage(1); }}><option value="pending">قيد الانتظار</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option><option value="all">الكل</option></select>
-        <div className="mt-4 overflow-x-auto"><table className="min-w-max text-sm"><thead className="bg-slate-50"><tr>{['التاريخ','الاسم','الشركة','الهاتف','المحافظة','الحالة','الإجراءات'].map((h) => <th className="px-3 py-2 text-right" key={h}>{h}</th>)}</tr></thead><tbody>{requests.map((row) => <tr className="border-t border-slate-100" key={row.id}><td className="px-3 py-2 whitespace-nowrap">{new Date(row.date).toLocaleDateString('ar-EG')}</td><td className="px-3 py-2">{row.full_name}</td><td className="px-3 py-2">{row.company_name}</td><td className="px-3 py-2">{row.whatsapp_phone}</td><td className="px-3 py-2">{row.governorate}</td><td className="px-3 py-2">{row.status}</td><td className="px-3 py-2"><div className="flex gap-2">{row.status === 'pending' && <><button className="idv-button idv-button-small bg-green-700" disabled={busy === row.id} onClick={() => decide(row.id, 'approve')}>موافقة</button><button className="idv-button idv-button-danger idv-button-small" disabled={busy === row.id} onClick={() => decide(row.id, 'reject')}>رفض</button></>}</div></td></tr>)}</tbody></table></div>
+        <div className="flex flex-wrap gap-3 items-end mb-4">
+          <select className={`${inputClass} max-w-52`} value={requestStatus} onChange={(e) => { setRequestStatus(e.target.value); setPage(1); setSelected(null); }}><option value="pending">قيد الانتظار</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option><option value="all">الكل</option></select>
+          <input className={`${inputClass} max-w-64`} placeholder="بحث بالاسم أو الموبايل..." value={reqSearch} onChange={(e) => { setReqSearch(e.target.value); setSelected(null); }} />
+        </div>
+        <div className="overflow-x-auto"><table className="min-w-max text-sm"><thead className="bg-slate-50"><tr>{['التاريخ','الاسم','الشركة','الهاتف','المحافظة','الحالة','الإجراءات'].map((h) => <th className="px-3 py-2 text-right" key={h}>{h}</th>)}</tr></thead><tbody>{requests.filter((r) => !reqSearch || r.full_name.includes(reqSearch) || r.company_name.includes(reqSearch) || r.whatsapp_phone.includes(reqSearch)).map((row) => (<>
+          <tr className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer" key={row.id} onClick={() => setSelected(selected === row.id ? null : row.id)}>
+            <td className="px-3 py-2 whitespace-nowrap">{new Date(row.date).toLocaleDateString('ar-EG')}</td>
+            <td className="px-3 py-2">{row.full_name}</td>
+            <td className="px-3 py-2">{row.company_name}</td>
+            <td className="px-3 py-2">{row.whatsapp_phone}</td>
+            <td className="px-3 py-2">{row.governorate}</td>
+            <td className="px-3 py-2">{row.status}</td>
+            <td className="px-3 py-2"><div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <button className="idv-button idv-button-light idv-button-small" onClick={() => setSelected(selected === row.id ? null : row.id)}>{selected === row.id ? 'إخفاء' : 'عرض'}</button>
+              {row.status === 'pending' && <><button className="idv-button idv-button-small bg-green-700 text-white" disabled={busy === row.id} onClick={() => decide(row.id, 'approve')}>موافقة</button><button className="idv-button idv-button-danger idv-button-small" disabled={busy === row.id} onClick={() => decide(row.id, 'reject')}>رفض</button></>}
+            </div></td>
+          </tr>
+          {selected === row.id && <tr key={`${row.id}-detail`} className="bg-slate-50 border-t border-slate-200"><td colSpan={7} className="px-4 py-4">
+            <div className="grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-3">
+              {[['الاسم الكامل', row.full_name],['البراند / الشركة', row.company_name],['رقم الواتساب', row.whatsapp_phone],['هاتف إضافي', row.extra_phone],['المحافظة', row.governorate],['المنطقة', row.area],['طبيعة المنتج', row.product_nature],['طريقة الدفع', row.payment_method],['رابط السوشيال', row.social_link],['الحالة', row.status]].map(([label, value]) => value ? <div key={label}><span className="font-semibold text-slate-500">{label}: </span><span>{value}</span></div> : null)}
+              {row.pickup_address && <div className="md:col-span-2"><span className="font-semibold text-slate-500">عنوان الاستلام: </span><span>{row.pickup_address}</span></div>}
+            </div>
+          </td></tr>}
+        </>))}</tbody></table></div>
         <div className="mt-4 flex items-center justify-between"><button className="idv-button idv-button-light idv-button-small" disabled={page === 1} onClick={() => setPage((v) => v - 1)}>السابق</button><span className="text-sm">صفحة {page} من {pages}</span><button className="idv-button idv-button-light idv-button-small" disabled={page >= pages} onClick={() => setPage((v) => v + 1)}>التالي</button></div>
       </div>}
 
