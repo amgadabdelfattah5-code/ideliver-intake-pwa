@@ -316,6 +316,18 @@ export default function Home() {
           </div>
         )}
 
+        {user.role === 'admin' && (
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500">إدارة واتساب</p>
+            <h2 className="mt-1 text-lg font-bold text-[#17365F]">WhatsApp</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              إدارة إعدادات Evolution API وقوالب الرسائل ومجموعات الموافقة وسجل الإرسال.
+            </p>
+            <Link className="idv-button idv-button-orange mt-5 h-10 text-sm" href="/whatsapp">
+              💬 فتح واتساب
+            </Link>
+          </div>
+        )}
         {(user.role === 'admin' || user.role === 'data_entry' || user.role === 'driver') && (
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold text-slate-500">تدفّق التوصيل</p>

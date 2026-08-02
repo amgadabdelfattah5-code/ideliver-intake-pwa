@@ -212,3 +212,59 @@ export async function fetchSettlementExport(merchantId: number, type: 'main' | '
   if (!res.ok) throw new Error(`WP API error: ${res.status}`);
   return res;
 }
+
+export async function getWASettings(): Promise<Record<string, string>> {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/wa-settings`, {
+    headers: { Authorization: `Basic ${auth}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json();
+}
+
+export async function saveWASettings(data: Record<string, string>): Promise<void> {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/wa-settings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+}
+
+export async function getWALogs(params?: { limit?: number; offset?: number; status?: string }) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const search = new URLSearchParams();
+  if (params?.limit != null) search.set('limit', String(params.limit));
+  if (params?.offset != null) search.set('offset', String(params.offset));
+  if (params?.status) search.set('status', params.status);
+  const qs = search.size ? `?${search}` : '';
+  const res = await fetch(`${getLiquidShipBase()}/wa-logs${qs}`, {
+    headers: { Authorization: `Basic ${auth}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json() as Promise<{ logs: WALog[]; total: number }>;
+}
+
+export async function resendWAMessage(payload: { phone: string; message: string; log_id: number }) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getLiquidShipBase()}/wa-resend`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json();
+}
+
+export interface WALog {
+  id: number;
+  date: string;
+  order_id: number;
+  recipient_number: string;
+  message_content: string;
+  status: 'success' | 'failed';
+  api_response: string;
+}
