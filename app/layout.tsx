@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import "./globals.css";
 import { AuthRedirect } from "./auth-redirect";
+import { HomeLink } from "./home-link";
 
 export const metadata: Metadata = {
   title: "iDeliver Intake",
@@ -15,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className="h-full antialiased">
-      <body className="min-h-full flex flex-col"><AuthRedirect />{children}</body>
+      <body className="min-h-full flex flex-col"><AuthRedirect /><HomeLink />{children}</body>
     </html>
   );
 }
