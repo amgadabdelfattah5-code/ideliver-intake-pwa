@@ -492,8 +492,8 @@ export default function AdminOrdersPage() {
 
         {!loading && !error && rows.length > 0 && (
           <>
-            <div className="mb-3 rounded-lg border border-slate-200 bg-white shadow-sm">
-              <table className="w-full table-fixed border-collapse text-right text-[11px]">
+            <div className="mb-3 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+              <table className="w-full min-w-[900px] table-fixed border-collapse text-right text-[11px]">
                 <colgroup>
                   {columnWidths.map((width, index) => (
                     <col key={index} style={{ width }} />
@@ -530,8 +530,8 @@ export default function AdminOrdersPage() {
               </table>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-              <table className="w-full table-fixed border-collapse text-right text-[11px]">
+            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+              <table className="w-full min-w-[900px] table-fixed border-collapse text-right text-[11px]">
                 <colgroup>
                   {columnWidths.map((width, index) => (
                     <col key={index} style={{ width }} />
