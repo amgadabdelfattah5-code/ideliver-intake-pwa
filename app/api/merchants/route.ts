@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requirePermission } from '@/lib/auth';
+import { requireAnyPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { searchWPMerchants, listAllWPMerchants } from '@/lib/wp-client';
 
@@ -55,7 +55,7 @@ async function cacheMerchants(wpMerchants: MerchantLookup[]) {
 // GET /api/merchants?q= — live WP lookup with cache fallback
 export async function GET(req: NextRequest) {
   // Auth check
-  const session = await requirePermission('merchants');
+  const session = await requireAnyPermission(['merchants', 'capture', 'settlement']);
   if (session instanceof NextResponse) {
     return session;
   }
