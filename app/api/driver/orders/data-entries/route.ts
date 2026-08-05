@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { requirePermission } from '@/lib/auth';
+import { requireAnyPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 function stringField(source: Record<string, unknown>, key: string): string {
@@ -10,7 +10,7 @@ function stringField(source: Record<string, unknown>, key: string): string {
 export async function GET(req: NextRequest) {
   // admin/data_entry ONLY — not 'driver'. This endpoint deliberately skips the
   // per-order assignment check, so allowing drivers would expose arbitrary orders.
-  const session = await requirePermission('driver');
+  const session = await requireAnyPermission(['driver', 'orders']);
   if (session instanceof NextResponse) return session;
 
   const idsParam = req.nextUrl.searchParams.get('ids') || '';
