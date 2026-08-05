@@ -57,6 +57,7 @@ export default function DriverOrdersPage() {
   const [error, setError] = useState('');
   const [selectedMerchantId, setSelectedMerchantId] = useState<number | null>(null);
   const [sessionRole, setSessionRole] = useState<StaffRole | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [query, setQuery] = useState('');
 
   const searchResults = useMemo(() => {
@@ -108,7 +109,7 @@ export default function DriverOrdersPage() {
   useEffect(() => {
     fetch('/api/auth/me')
       .then((response) => (response.ok ? response.json() : null))
-      .then((data) => setSessionRole(data?.user?.role ?? null))
+      .then((data) => { setSessionRole(data?.user?.role ?? null); setPermissions(data?.user?.permissions ?? []); })
       .catch(() => setSessionRole(null));
 
     fetch('/api/driver/orders')
@@ -138,7 +139,7 @@ export default function DriverOrdersPage() {
       </header>
 
       <section className="mx-auto max-w-4xl px-4 py-6">
-        {(sessionRole === 'admin' || sessionRole === 'data_entry') && (
+        {(sessionRole === 'admin' || sessionRole === 'data_entry' || permissions.includes('driver')) && (
           <div className="mb-4 flex justify-end">
             <Link
               className="idv-button idv-button-light idv-button-small text-sm"
