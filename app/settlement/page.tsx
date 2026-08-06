@@ -119,7 +119,13 @@ export default function SettlementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order_id: orderId, merchant_id: merchantId, ...edit }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errText = await res.text();
+        let errMsg: string;
+        try { errMsg = (JSON.parse(errText) as { error?: string }).error || `خطأ ${res.status}`; }
+        catch { errMsg = `خطأ ${res.status}`; }
+        throw new Error(errMsg);
+      }
       setMsg('تم حفظ الطلب #' + orderId);
       await loadData(merchantId);
     } catch (e: any) {
@@ -137,7 +143,13 @@ export default function SettlementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ op: 'add', merchant_id: merchantId, kind: adjKind, amount, reason, submit_key: crypto.randomUUID() }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errText = await res.text();
+        let errMsg: string;
+        try { errMsg = (JSON.parse(errText) as { error?: string }).error || `خطأ ${res.status}`; }
+        catch { errMsg = `خطأ ${res.status}`; }
+        throw new Error(errMsg);
+      }
       setAdjAmount(''); setAdjReason(''); setOnAcctAmount('');
       setMsg('تم إضافة التعديل');
       await loadData(merchantId);
@@ -156,7 +168,13 @@ export default function SettlementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ op: 'delete', merchant_id: merchantId, adjustment_id: adjId }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errText = await res.text();
+        let errMsg: string;
+        try { errMsg = (JSON.parse(errText) as { error?: string }).error || `خطأ ${res.status}`; }
+        catch { errMsg = `خطأ ${res.status}`; }
+        throw new Error(errMsg);
+      }
       setMsg('تم الحذف');
       await loadData(merchantId);
     } catch (e: any) {
@@ -171,7 +189,13 @@ export default function SettlementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ op: 'edit', merchant_id: merchantId, adjustment_id: adjId, amount: editAdjAmount, reason: editAdjReason }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errText = await res.text();
+        let errMsg: string;
+        try { errMsg = (JSON.parse(errText) as { error?: string }).error || `خطأ ${res.status}`; }
+        catch { errMsg = `خطأ ${res.status}`; }
+        throw new Error(errMsg);
+      }
       setEditingAdj(null);
       setMsg('تم التعديل');
       await loadData(merchantId);
@@ -188,7 +212,13 @@ export default function SettlementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ op, merchant_id: merchantId, payout_id: balance?.open_payout_id, ...extra }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errText = await res.text();
+        let errMsg: string;
+        try { errMsg = (JSON.parse(errText) as { error?: string }).error || `خطأ ${res.status}`; }
+        catch { errMsg = `خطأ ${res.status}`; }
+        throw new Error(errMsg);
+      }
       setPayoutRef(''); setZeroReason('');
       setMsg('تم: ' + op);
       await loadData(merchantId);
