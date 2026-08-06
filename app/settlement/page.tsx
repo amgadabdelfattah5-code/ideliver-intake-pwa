@@ -352,7 +352,7 @@ export default function SettlementPage() {
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50">
                       <tr>
-                        {['الطلب','الاسم','الهاتف','المحافظة','الحالة','المنتج (ج.م)','الشحن (ج.م)','حفظ'].map(h => (
+                        {['الطلب','الاسم','الهاتف','المحافظة','المنتج (ج.م)','الشحن (ج.م)','حفظ','الحالة'].map(h => (
                           <th key={h} className="px-2 py-2 text-right font-semibold text-slate-600">{h}</th>
                         ))}
                       </tr>
@@ -366,9 +366,8 @@ export default function SettlementPage() {
                             <td className="px-2 py-1">{o.billing_name}</td>
                             <td className="px-2 py-1">{o.billing_phone}</td>
                             <td className="px-2 py-1">{o.governorate}</td>
-                            <td className="px-2 py-1">{o.order_status}</td>
                             <td className="px-2 py-1">
-                              <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1">
                                 <input
                                   type="number" step="0.01" min="0"
                                   className="w-20 rounded border border-slate-300 px-1 py-0.5 bg-yellow-50"
@@ -385,7 +384,7 @@ export default function SettlementPage() {
                               </div>
                             </td>
                             <td className="px-2 py-1">
-                              <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1">
                                 <input
                                   type="number" step="0.01" min="0"
                                   className="w-20 rounded border border-slate-300 px-1 py-0.5 bg-yellow-50"
@@ -410,6 +409,7 @@ export default function SettlementPage() {
                                 {rowSaving[o.order_id] ? '...' : 'حفظ'}
                               </button>
                             </td>
+                            <td className="px-2 py-1">{o.order_status}</td>
                           </tr>
                         );
                       })}
