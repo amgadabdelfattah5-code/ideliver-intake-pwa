@@ -600,33 +600,40 @@ export default function SettlementPage() {
 
             {/* Payout actions */}
             <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
-              <h2 className="text-base font-bold text-[#17365F]">إعداد الدفعة</h2>
-              <div className="flex gap-2 flex-wrap">
-                {!openStatus && (
+              <h2 className="text-base font-bold text-[#17365F]">الدفع</h2>
+              {!openStatus ? (
+                <div className="flex gap-2 flex-wrap items-center">
+                  <input
+                    type="text"
+                    placeholder="مرجع الدفع (اختياري)"
+                    className="rounded border border-slate-300 px-2 py-2 text-sm flex-1 min-w-48"
+                    value={payoutRef}
+                    onChange={e => setPayoutRef(e.target.value)}
+                  />
                   <button
                     className="idv-button disabled:opacity-50"
+                    style={{ '--idv-bg': '#16a34a', '--idv-shadow': 'rgba(8,60,20,0.45)' } as React.CSSProperties}
                     disabled={payoutSubmitting}
-                    onClick={() => doPayout('prepare')}
+                    onClick={() => doPayout('quick_commit', payoutRef ? { external_ref: payoutRef } : {})}
                   >
-                    إعداد دفعة
+                    {payoutSubmitting ? '...' : 'تم الدفع'}
                   </button>
-                )}
-                {openStatus === 'draft' && (
-                  <>
-                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#2563eb', '--idv-shadow': 'rgba(20,40,120,0.45)' } as React.CSSProperties} disabled={payoutSubmitting} onClick={() => doPayout('begin')}>بدء التحويل</button>
-                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#64748b', '--idv-shadow': 'rgba(40,40,60,0.35)' } as React.CSSProperties} disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>إلغاء</button>
-                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#d97706', '--idv-shadow': 'rgba(120,53,15,0.45)' } as React.CSSProperties} disabled={payoutSubmitting || !zeroReason} onClick={() => doPayout('commit_zero', { reason: zeroReason })}>إغلاق بصفر</button>
-                    <input type="text" placeholder="سبب الإغلاق بصفر" className="rounded border border-slate-300 px-2 py-1 text-sm flex-1 min-w-32" value={zeroReason} onChange={e => setZeroReason(e.target.value)} />
-                  </>
-                )}
-                {openStatus === 'sending' && (
-                  <>
-                    <input type="text" placeholder="مرجع التحويل الخارجي" className="rounded border border-slate-300 px-2 py-2 text-sm flex-1 min-w-48" value={payoutRef} onChange={e => setPayoutRef(e.target.value)} />
-                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#16a34a', '--idv-shadow': 'rgba(8,60,20,0.45)' } as React.CSSProperties} disabled={payoutSubmitting || !payoutRef} onClick={() => doPayout('confirm', { external_ref: payoutRef })}>تأكيد التحويل</button>
-                    <button className="idv-button disabled:opacity-50" style={{ '--idv-bg': '#64748b', '--idv-shadow': 'rgba(40,40,60,0.35)' } as React.CSSProperties} disabled={payoutSubmitting} onClick={() => doPayout('cancel')}>إلغاء</button>
-                  </>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="flex gap-2 flex-wrap items-center">
+                  <span className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                    دفعة مفتوحة #{balance?.open_payout_id} ({openStatus})
+                  </span>
+                  <button
+                    className="idv-button disabled:opacity-50"
+                    style={{ '--idv-bg': '#64748b', '--idv-shadow': 'rgba(40,40,60,0.35)' } as React.CSSProperties}
+                    disabled={payoutSubmitting}
+                    onClick={() => doPayout('cancel')}
+                  >
+                    إلغاء الدفعة
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Recent payouts */}
