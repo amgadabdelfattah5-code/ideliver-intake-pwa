@@ -718,8 +718,8 @@ export default function DriverBulkPage() {
                   return (
                     <tr className="align-top" key={row.orderId}>
                       <td className="overflow-hidden truncate p-1 font-bold text-slate-800" title={row.tracking || undefined}>{row.tracking || '—'}</td>
-                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantIdentityLabel || undefined}>
-                        {row.merchantIdentityLabel || '—'}
+                      <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.merchantName || undefined}>
+                        {row.merchantName || '—'}
                       </td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.customerName || undefined}>{row.customerName || '—'}</td>
                       <td className="overflow-hidden truncate p-1 font-semibold text-slate-700" title={row.recipientGovernorate || undefined}>
