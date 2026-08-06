@@ -99,15 +99,17 @@ function formatMoneyInput(value: string): string {
   return digits ? Number(digits).toLocaleString('en-US') : '';
 }
 
-// Deliberately excludes financial/admin-only statuses (e.g. refunded) — matches the
-// WP-side STATUS_MAP; a delivery visit shouldn't be able to trigger a refund.
 const statuses = [
+  { value: 'pending', label: 'انتظار الدفع' },
+  { value: 'processing', label: 'قيد المعالجة' },
+  { value: 'shipment-rec', label: 'تم استلام الشحنة' },
   { value: 'shipped', label: 'قيد التوصيل' },
-  { value: 'delivered', label: 'تم التوصيل' },
   { value: 'on-hold', label: 'قيد الانتظار' },
   { value: 'postponed', label: 'مؤجل' },
+  { value: 'refunded-merchant', label: 'مرتجع (شحن على التاجر)' },
   { value: 'cancelled', label: 'ملغي' },
   { value: 'failed', label: 'فشل التوصيل' },
+  { value: 'delivered', label: 'تم التوصيل' },
   { value: 'returned-full', label: 'مرتجع كامل' },
   { value: 'returned-partial', label: 'مرتجع جزئي' },
 ];
