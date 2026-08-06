@@ -45,7 +45,7 @@ export default function SettlementPage() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
-  const [rowEdits, setRowEdits] = useState<Record<number, { product_amount: string; shipping_amount: string; product_recipient: string; shipping_recipient: string }>>({});
+  const [rowEdits, setRowEdits] = useState<Record<number, { product_amount: string; shipping_amount: string; product_recipient: string; shipping_recipient: string; order_status: string }>>({});
   const [rowSaving, setRowSaving] = useState<Record<number, boolean>>({});
 
   const [adjAmount, setAdjAmount] = useState('');
@@ -94,6 +94,7 @@ export default function SettlementPage() {
           shipping_amount: o.collected_shipping_fee || '0',
           product_recipient: pr,
           shipping_recipient: sr,
+          order_status: o.order_status || 'delivered',
         };
       }
       setRowEdits(edits);
@@ -114,17 +115,26 @@ export default function SettlementPage() {
     if (!edit) return;
     setRowSaving(s => ({ ...s, [orderId]: true }));
     try {
-      const res = await fetch('/api/settlement/order-edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: orderId, merchant_id: merchantId, ...edit }),
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        let errMsg: string;
-        try { errMsg = (JSON.parse(errText) as { error?: string }).error || `خطأ ${res.status}`; }
-        catch { errMsg = `خطأ ${res.status}`; }
-        throw new Error(errMsg);
+      const [finRes, statusRes] = await Promise.all([
+        fetch('/api/settlement/order-edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderId, merchant_id: merchantId, product_amount: edit.product_amount, shipping_amount: edit.shipping_amount, product_recipient: edit.product_recipient, shipping_recipient: edit.shipping_recipient }),
+        }),
+        fetch('/api/settlement/order-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderId, status: edit.order_status }),
+        }),
+      ]);
+      for (const res of [finRes, statusRes]) {
+        if (!res.ok) {
+          const errText = await res.text();
+          let errMsg: string;
+          try { errMsg = (JSON.parse(errText) as { error?: string }).error || `خطأ ${res.status}`; }
+          catch { errMsg = `خطأ ${res.status}`; }
+          throw new Error(errMsg);
+        }
       }
       setMsg('تم حفظ الطلب #' + orderId);
       await loadData(merchantId);
@@ -409,7 +419,18 @@ export default function SettlementPage() {
                                 {rowSaving[o.order_id] ? '...' : 'حفظ'}
                               </button>
                             </td>
-                            <td className="px-2 py-1">{o.order_status}</td>
+                            <td className="px-2 py-1">
+                              <select
+                                className="rounded border border-slate-300 px-1 py-0.5 text-xs bg-white"
+                                value={edit.order_status}
+                                onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, order_status: e.target.value } }))}
+                              >
+                                <option value="delivered">تم التوصيل</option>
+                                <option value="returned-full">مرتجع كلي</option>
+                                <option value="returned-partial">مرتجع جزئي</option>
+                                <option value="failed">فشل</option>
+                              </select>
+                            </td>
                           </tr>
                         );
                       })}
@@ -593,13 +614,6 @@ export default function SettlementPage() {
               <h2 className="text-base font-bold text-[#17365F]">الدفع</h2>
               {!openStatus ? (
                 <div className="flex gap-2 flex-wrap items-center">
-                  <input
-                    type="text"
-                    placeholder="مرجع الدفع (اختياري)"
-                    className="rounded border border-slate-300 px-2 py-2 text-sm flex-1 min-w-48"
-                    value={payoutRef}
-                    onChange={e => setPayoutRef(e.target.value)}
-                  />
                   <button
                     className="idv-button disabled:opacity-50"
                     style={{ '--idv-bg': '#16a34a', '--idv-shadow': 'rgba(8,60,20,0.45)' } as React.CSSProperties}
@@ -608,6 +622,13 @@ export default function SettlementPage() {
                   >
                     {payoutSubmitting ? '...' : 'تم الدفع'}
                   </button>
+                  <input
+                    type="text"
+                    placeholder="مرجع الدفع (اختياري)"
+                    className="rounded border border-slate-300 px-2 py-2 text-sm flex-1 min-w-48"
+                    value={payoutRef}
+                    onChange={e => setPayoutRef(e.target.value)}
+                  />
                 </div>
               ) : (
                 <div className="flex gap-2 flex-wrap items-center">

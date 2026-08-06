@@ -322,6 +322,17 @@ export async function rejectRequest(id: number) {
   return res.json();
 }
 
+export async function updateOrderStatus(orderId: number, status: string) {
+  const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
+  const res = await fetch(`${getWpJsonBase()}/wc/v3/orders/${orderId}`, {
+    method: 'PUT',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error(`WP API error: ${res.status}`);
+  return res.json();
+}
+
 export async function addMerchantDirect(data: Record<string, string>) {
   const auth = Buffer.from(`${WP_USER}:${WP_PASSWORD}`).toString('base64');
   const res  = await fetch(`${getLiquidShipBase()}/merchants/add`, {
