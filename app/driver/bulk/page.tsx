@@ -118,6 +118,11 @@ const recipients = [
   { value: 'not_paid', label: 'لم يُدفع' },
 ];
 
+const ACTIVE_STATUSES = new Set([
+  'pending', 'processing', 'shipment-rec', 'shipped',
+  'on-hold', 'postponed', 'refunded-merchant', 'cancelled', 'failed',
+]);
+
 const initialFilters: GridFilters = {
   tracking: '',
   merchantName: '',
@@ -201,6 +206,7 @@ function exportRowsToCSV(rows: GridRow[]) {
 export default function DriverBulkPage() {
   const [rows, setRows] = useState<GridRow[]>([]);
   const [filters, setFilters] = useState<GridFilters>(initialFilters);
+  const [username, setUsername] = useState<string>('');
   const [accessState, setAccessState] = useState<'checking' | 'allowed' | 'forbidden'>('checking');
   const [loading, setLoading] = useState(true);
   const [dataEntriesLoadState, setDataEntriesLoadState] =
@@ -271,6 +277,7 @@ export default function DriverBulkPage() {
         }
 
         if (cancelled) return;
+        setUsername(authData.user?.username ?? '');
         setAccessState('allowed');
 
         const ordersResponse = await fetch('/api/driver/orders');
@@ -341,12 +348,17 @@ export default function DriverBulkPage() {
   }, []);
 
   const visibleRows = useMemo(() => {
+    const allowedStatuses = username === 'amgad'
+      ? new Set([...ACTIVE_STATUSES, 'delivered'])
+      : ACTIVE_STATUSES;
+
     const normalizedFilters = Object.fromEntries(
       Object.entries(filters).map(([key, value]) => [key, value.toLocaleLowerCase()])
     ) as Record<keyof GridFilters, string>;
 
     return rows.filter(
       (row) =>
+        allowedStatuses.has(row.currentStatus) &&
         row.tracking.toLocaleLowerCase().includes(normalizedFilters.tracking) &&
         row.merchantName.toLocaleLowerCase().includes(normalizedFilters.merchantName) &&
         row.customerName.toLocaleLowerCase().includes(normalizedFilters.customerName) &&
@@ -376,7 +388,7 @@ export default function DriverBulkPage() {
         row.selectedStatus.toLocaleLowerCase().includes(normalizedFilters.selectedStatus) &&
         row.note.toLocaleLowerCase().includes(normalizedFilters.note)
     );
-  }, [filters, rows]);
+  }, [filters, rows, username]);
 
   // Distinct, sorted values per filterable column, used to populate each
   // filter's <datalist> — derived from the full row set (not visibleRows),
