@@ -368,47 +368,37 @@ export default function SettlementPage() {
                             <td className="px-2 py-1">{o.governorate}</td>
                             <td className="px-2 py-1">{o.order_status}</td>
                             <td className="px-2 py-1">
-                              <div className="flex items-center gap-1 flex-wrap">
+                              <div className="flex flex-col gap-1">
                                 <input
                                   type="number" step="0.01" min="0"
                                   className="w-20 rounded border border-slate-300 px-1 py-0.5 bg-yellow-50"
                                   value={edit.product_amount}
                                   onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, product_amount: e.target.value } }))}
                                 />
-                                <div className="flex gap-1 flex-wrap">
-                                  {RECIP_OPTIONS.map(opt => (
-                                    <button
-                                      key={opt.value}
-                                      type="button"
-                                      className={`px-1.5 py-0.5 text-xs rounded ${edit.product_recipient === opt.value ? 'bg-[#17365F] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                                      onClick={() => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, product_recipient: opt.value } }))}
-                                    >
-                                      {opt.label}
-                                    </button>
-                                  ))}
-                                </div>
+                                <select
+                                  className="rounded border border-slate-300 px-1 py-0.5 text-xs bg-white"
+                                  value={edit.product_recipient}
+                                  onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, product_recipient: e.target.value } }))}
+                                >
+                                  {RECIP_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                </select>
                               </div>
                             </td>
                             <td className="px-2 py-1">
-                              <div className="flex items-center gap-1 flex-wrap">
+                              <div className="flex flex-col gap-1">
                                 <input
                                   type="number" step="0.01" min="0"
                                   className="w-20 rounded border border-slate-300 px-1 py-0.5 bg-yellow-50"
                                   value={edit.shipping_amount}
                                   onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, shipping_amount: e.target.value } }))}
                                 />
-                                <div className="flex gap-1 flex-wrap">
-                                  {RECIP_OPTIONS.map(opt => (
-                                    <button
-                                      key={opt.value}
-                                      type="button"
-                                      className={`px-1.5 py-0.5 text-xs rounded ${edit.shipping_recipient === opt.value ? 'bg-[#17365F] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                                      onClick={() => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, shipping_recipient: opt.value } }))}
-                                    >
-                                      {opt.label}
-                                    </button>
-                                  ))}
-                                </div>
+                                <select
+                                  className="rounded border border-slate-300 px-1 py-0.5 text-xs bg-white"
+                                  value={edit.shipping_recipient}
+                                  onChange={e => setRowEdits(r => ({ ...r, [o.order_id]: { ...edit, shipping_recipient: e.target.value } }))}
+                                >
+                                  {RECIP_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                </select>
                               </div>
                             </td>
                             <td className="px-2 py-1">
